@@ -117,8 +117,9 @@ uv sync
 ```
 
 ### 6-1 : 더미데이터 세팅
+```bash
 python manage.py seed_test_data
-
+```
 테스트용 계정:
 username='testuser',
 defaults={'password': 'testpassword123'}
