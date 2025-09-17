@@ -5,7 +5,8 @@
 ### 1. uv 설치
 
 uv 설치법
-curl -LsSf https://astral.sh/uv/install.sh | sh #uv 치
+curl -LsSf https://astral.sh/uv/install.sh | sh # uv 설치
+<br>
 source $HOME/.cargo/env #환경변수 설정
 
 가상환경 생성 및 활성화
