@@ -55,35 +55,49 @@ class Command(BaseCommand):
         for account in email_accounts:
             self.stdout.write(f'  - For account: {account.email_address}')
             for i in range(20):
-                # Email 객체 생성 (sent_at 추가)
+                folder = random.choice(folder_choices)
+                
+                from_addr = ''
+                to_addr = ''
+
+                # 'sent' 폴더일 경우 from_address와 to_address를 재설정
+                if folder == 'sent':
+                    from_addr = account.email_address
+                    to_addr = f'recipient{i+1}@{random.choice(["example.com", "test.com", "mailer.com"])}'
+                else:
+                    from_addr = f'sender{i+1}@{random.choice(["example.com", "test.com", "mailer.com"])}'
+                    to_addr = account.email_address
+
+                # Email 객체 생성
                 email = Email.objects.create(
                     subject=f'Test Subject {i+1} for {account.email_address}',
-                    from_address=f'sender{i+1}@example.com',
+                    from_address=from_addr,
                     body=f'This is the body of test email {i+1}.',
                     sent_at=timezone.now() - timedelta(days=i, hours=i*2)
                 )
 
-                # EmailRecipient 객체 생성 (수신자 정보 추가)
-                # 1. 받는 사람 (TO) - 자기 자신
+                # EmailRecipient 객체 생성
                 EmailRecipient.objects.create(
                     email=email,
-                    recipient_address=account.email_address,
+                    recipient_address=to_addr,
                     recipient_type='TO'
                 )
-                # 2. 참조 (CC) - 다른 테스트 계정 중 랜덤
-                if i % 2 == 0: # 2번에 1번 꼴로 참조 추가
+                
+                # 'sent'가 아닌 메일에만 참조 추가
+                if folder != 'sent' and i % 2 == 0:
                     other_recipients = [acc.email_address for acc in email_accounts if acc != account]
-                    EmailRecipient.objects.create(
-                        email=email,
-                        recipient_address=random.choice(other_recipients),
-                        recipient_type='CC'
-                    )
+                    if other_recipients:
+                        EmailRecipient.objects.create(
+                            email=email,
+                            recipient_address=random.choice(other_recipients),
+                            recipient_type='CC'
+                        )
 
-                # Mailbox 객체 생성 (Email과 EmailAccount 연결)
+                # Mailbox 객체 생성
                 Mailbox.objects.create(
                     account=account,
                     email=email,
-                    folder=random.choice(folder_choices),
+                    folder=folder,
                     is_read=random.choice([True, False]),
                     is_important=random.choice([True, False]),
                 )
