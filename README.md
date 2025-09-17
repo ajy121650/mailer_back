@@ -13,10 +13,9 @@ source $HOME/.cargo/env #환경변수 설정
 uv venv
 source .venv/bin/activate
 
-초기세팅 (pyproject.toml 없을 때)
-uv init
+uv sync
 
-이후 패키지 추가
+이후 패키지 추가 필요 시
 uv add 패키지명
 
 ---
