@@ -134,4 +134,4 @@ defaults={'password': 'testpassword123'}
 .venv/bin/python manage.py runserver
 ```
 
-서버가 정상적으로 실행되면, 웹 브라우저에서 `http://127.0.0.1:8000/` 주소로 접속할 수 있습니다.
+서버가 정상적으로 실행되면, 웹 브라우저에서 `http://127.0.0.1:8000/api/swagger` 주소로 접속할 수 있습니다.
