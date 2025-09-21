@@ -10,4 +10,9 @@ dependencies = [
     "djangorestframework>=3.16.1",
     "drf-spectacular>=0.28.0",
     "python-dotenv>=1.1.1",
+    "asgiref==3.9.1",
+    "ruff==0.13.1",
+    "setuptools==78.1.1",
+    "sqlparse==0.5.3",
+    "wheel==0.45.1",
 ]

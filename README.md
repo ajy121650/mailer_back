@@ -57,6 +57,14 @@ FERNET_KEY=your_generated_fernet_key_here
 
 ---
 
+### 3. pre-commit 설정 활성화
+
+아래의 코드를 실행하면 pre-commit 설정이 활성화 됩니다. 저희는 린터/포매터로 ruff와 black을 사용중입니다.
+
+```bash
+pre-commit install
+```
+
 ## 🚀 프론트엔드를 위한 가이드
 
 이 문서는 Mailer 프로젝트의 백엔드 설정을 위한 가이드입니다.
@@ -93,14 +101,14 @@ uv sync
 
 2.  아래 명령어를 실행하여 `SECRET_KEY`와 `FERNET_KEY`를 각각 생성합니다.
 
-    *   **SECRET_KEY 생성:**
-        ```bash
-        .venv/bin/python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
-        ```
-    *   **FERNET_KEY 생성:**
-        ```bash
-        .venv/bin/python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
-        ```
+    - **SECRET_KEY 생성:**
+      ```bash
+      .venv/bin/python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+      ```
+    - **FERNET_KEY 생성:**
+      ```bash
+      .venv/bin/python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
+      ```
 
 3.  생성된 두 개의 키를 복사하여 `.env` 파일 안에 각각 붙여넣습니다.
     ```
@@ -117,9 +125,11 @@ uv sync
 ```
 
 ### 6-1 : 더미데이터 세팅
+
 ```bash
 python manage.py seed_test_data
 ```
+
 테스트용 계정:
 username='testuser',
 defaults={'password': 'testpassword123'}

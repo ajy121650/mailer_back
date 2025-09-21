@@ -1,0 +1,13 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.1 # ruff-pre-commit 최신 릴리스 버전 확인
+    hooks:
+      - id: ruff
+        args: [--fix] # 자동 수정 가능하면 수정
+      - id: ruff-format # black처럼 코드 포매팅 역할
+
+  - repo: https://github.com/psf/black
+    rev: 25.9.0 # black 최신 릴리스 버전 확인
+    hooks:
+      - id: black
+        language_version: python3.10
