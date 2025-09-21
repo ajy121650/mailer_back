@@ -4,15 +4,26 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('mail', '0002_initial'),
+        ("mail", "0002_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='mailbox',
-            name='folder',
-            field=models.CharField(choices=[('inbox', '받은 메일함'), ('junk', '스팸 메일함'), ('drafts', '임시보관함'), ('sent', '보낸 메일함'), ('archive', '보관함'), ('deleted', '휴지통')], default='inbox', max_length=50, verbose_name='폴더'),
+            model_name="mailbox",
+            name="folder",
+            field=models.CharField(
+                choices=[
+                    ("inbox", "받은 메일함"),
+                    ("junk", "스팸 메일함"),
+                    ("drafts", "임시보관함"),
+                    ("sent", "보낸 메일함"),
+                    ("archive", "보관함"),
+                    ("deleted", "휴지통"),
+                ],
+                default="inbox",
+                max_length=50,
+                verbose_name="폴더",
+            ),
         ),
     ]

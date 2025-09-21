@@ -5,27 +5,36 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('mail', '0001_initial'),
-        ('user', '0001_initial'),
+        ("mail", "0001_initial"),
+        ("user", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='mailbox',
-            name='account',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='mailbox_items', to='user.emailaccount', verbose_name='이메일 계정'),
+            model_name="mailbox",
+            name="account",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="mailbox_items",
+                to="user.emailaccount",
+                verbose_name="이메일 계정",
+            ),
         ),
         migrations.AddField(
-            model_name='mailbox',
-            name='email',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='mailbox_entries', to='mail.email', verbose_name='이메일'),
+            model_name="mailbox",
+            name="email",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="mailbox_entries",
+                to="mail.email",
+                verbose_name="이메일",
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='mailbox',
-            unique_together={('account', 'email')},
+            name="mailbox",
+            unique_together={("account", "email")},
         ),
     ]

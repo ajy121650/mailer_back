@@ -6,62 +6,164 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
+        ("auth", "0012_alter_user_first_name_max_length"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='User',
+            name="User",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('password', models.CharField(max_length=128, verbose_name='password')),
-                ('last_login', models.DateTimeField(blank=True, null=True, verbose_name='last login')),
-                ('is_superuser', models.BooleanField(default=False, help_text='Designates that this user has all permissions without explicitly assigning them.', verbose_name='superuser status')),
-                ('username', models.CharField(max_length=255, unique=True, verbose_name='사용자 아이디')),
-                ('is_staff', models.BooleanField(default=False, verbose_name='관리자 권한')),
-                ('is_active', models.BooleanField(default=True, verbose_name='활성 상태')),
-                ('date_joined', models.DateTimeField(auto_now_add=True, verbose_name='가입일')),
-                ('groups', models.ManyToManyField(blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_name='user_set', related_query_name='user', to='auth.group', verbose_name='groups')),
-                ('user_permissions', models.ManyToManyField(blank=True, help_text='Specific permissions for this user.', related_name='user_set', related_query_name='user', to='auth.permission', verbose_name='user permissions')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("password", models.CharField(max_length=128, verbose_name="password")),
+                (
+                    "last_login",
+                    models.DateTimeField(blank=True, null=True, verbose_name="last login"),
+                ),
+                (
+                    "is_superuser",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Designates that this user has all permissions without explicitly assigning them.",
+                        verbose_name="superuser status",
+                    ),
+                ),
+                (
+                    "username",
+                    models.CharField(max_length=255, unique=True, verbose_name="사용자 아이디"),
+                ),
+                (
+                    "is_staff",
+                    models.BooleanField(default=False, verbose_name="관리자 권한"),
+                ),
+                (
+                    "is_active",
+                    models.BooleanField(default=True, verbose_name="활성 상태"),
+                ),
+                (
+                    "date_joined",
+                    models.DateTimeField(auto_now_add=True, verbose_name="가입일"),
+                ),
+                (
+                    "groups",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="The groups this user belongs to. A user will get all permissions granted to each of their groups.",
+                        related_name="user_set",
+                        related_query_name="user",
+                        to="auth.group",
+                        verbose_name="groups",
+                    ),
+                ),
+                (
+                    "user_permissions",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="Specific permissions for this user.",
+                        related_name="user_set",
+                        related_query_name="user",
+                        to="auth.permission",
+                        verbose_name="user permissions",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': '사용자',
-                'verbose_name_plural': '사용자 목록',
+                "verbose_name": "사용자",
+                "verbose_name_plural": "사용자 목록",
             },
         ),
         migrations.CreateModel(
-            name='EmailAccount',
+            name="EmailAccount",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('email_address', models.EmailField(max_length=254, unique=True, verbose_name='이메일 주소')),
-                ('encrypted_password', models.TextField(blank=True, verbose_name='암호화된 이메일 비밀번호')),
-                ('priority', models.IntegerField(blank=True, null=True, verbose_name='우선순위')),
-                ('is_valid', models.BooleanField(default=True, verbose_name='유효 계정')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='생성일')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='email_accounts', to=settings.AUTH_USER_MODEL, verbose_name='사용자')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "email_address",
+                    models.EmailField(max_length=254, unique=True, verbose_name="이메일 주소"),
+                ),
+                (
+                    "encrypted_password",
+                    models.TextField(blank=True, verbose_name="암호화된 이메일 비밀번호"),
+                ),
+                (
+                    "priority",
+                    models.IntegerField(blank=True, null=True, verbose_name="우선순위"),
+                ),
+                (
+                    "is_valid",
+                    models.BooleanField(default=True, verbose_name="유효 계정"),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="생성일"),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="email_accounts",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="사용자",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': '사용자 이메일 계정',
-                'verbose_name_plural': '사용자 이메일 계정 목록',
-                'ordering': ['user', 'priority'],
+                "verbose_name": "사용자 이메일 계정",
+                "verbose_name_plural": "사용자 이메일 계정 목록",
+                "ordering": ["user", "priority"],
             },
         ),
         migrations.CreateModel(
-            name='Template',
+            name="Template",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('template_content', models.TextField(verbose_name='템플릿 내용')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='생성일')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='수정일')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='templates', to=settings.AUTH_USER_MODEL, verbose_name='작성자')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("template_content", models.TextField(verbose_name="템플릿 내용")),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="생성일"),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(auto_now=True, verbose_name="수정일"),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="templates",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="작성자",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': '템플릿',
-                'verbose_name_plural': '템플릿 목록',
+                "verbose_name": "템플릿",
+                "verbose_name_plural": "템플릿 목록",
             },
         ),
     ]

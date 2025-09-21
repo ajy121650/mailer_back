@@ -5,22 +5,26 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('contact', '0001_initial'),
-        ('user', '0001_initial'),
+        ("contact", "0001_initial"),
+        ("user", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='contact',
-            name='account',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='contacts', to='user.emailaccount', verbose_name='소유 계정'),
+            model_name="contact",
+            name="account",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="contacts",
+                to="user.emailaccount",
+                verbose_name="소유 계정",
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='contact',
-            unique_together={('account', 'email_address')},
+            name="contact",
+            unique_together={("account", "email_address")},
         ),
     ]
