@@ -62,6 +62,7 @@ FERNET_KEY=your_generated_fernet_key_here
 아래의 코드를 실행하면 pre-commit 설정이 활성화 됩니다. 저희는 린터/포매터로 ruff와 black을 사용중입니다.
 
 ```bash
+pip install pre-commit
 pre-commit install
 ```
 
