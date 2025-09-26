@@ -142,6 +142,10 @@ FERNET_KEY = os.environ.get("FERNET_KEY")
 # Django REST Framework & drf-spectacular settings
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "user.auth.ClerkAuthentication",
+    ],
 }
 
 SPECTACULAR_SETTINGS = {
@@ -150,3 +154,9 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
 }
+
+# Clerk 환경변수
+# CLERK_ISSUER는 Clerk 대시보드에서 복사
+CLERK_ISSUER = "https://<your-clerk-domain>"  # 예: https://example.clerk.accounts.dev
+CLERK_JWKS_URL = f"{CLERK_ISSUER}/.well-known/jwks.json"
+CLERK_AUDIENCE = None  # Session Token 쓰면 보통 None. JWT Template 쓰면 "my-backend" 등으로 세팅
