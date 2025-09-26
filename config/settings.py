@@ -34,10 +34,13 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     # Local Apps
     "user",
-    "mail",
+    "email_content",
+    "email_account",
+    "email_attachment",
+    "email_metadata",
+    "template",
     "contact",
     # Third-party Apps
-    #
     "rest_framework",
     # drf 문서 자동생성용 앱
     "drf_spectacular",
@@ -131,10 +134,6 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-
-# Custom User model 설정
-AUTH_USER_MODEL = "user.User"
 
 # Fernet encryption key for EmailAccount passwords
 # Loaded from .env file
