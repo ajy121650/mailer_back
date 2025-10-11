@@ -1,10 +1,10 @@
 import imaplib
 import email
-from .models import EmailContent
+from email_content.models import EmailContent
 from email_account.models import EmailAccount
 from email_attachment.models import Attachment
 from email_metadata.models import EmailMetadata
-from .utils import get_imap_config
+from email_content.utils import get_imap_config
 import uuid
 import boto3
 import email.utils
