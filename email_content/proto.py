@@ -40,7 +40,10 @@ def fetch_and_store_emails(address):
 
     # 2. IMAP 연결
     try:
-        imap_host, imap_port = get_imap_config(account.domain)
+        imap_config = get_imap_config(account.domain)
+        imap_host = imap_config["host"]
+        imap_port = imap_config["port"]
+        # 필요하다면 ssl 옵션도 imap_config["ssl"]로 사용 가능
 
         imap = imaplib.IMAP4_SSL(imap_host, imap_port)
         imap.login(account.address, account.email_password)
