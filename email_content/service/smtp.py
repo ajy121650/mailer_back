@@ -1,5 +1,6 @@
 import smtplib
 import ssl
+import certifi
 from email.message import EmailMessage
 from email.utils import make_msgid, formatdate
 from ..utils import get_smtp_config
@@ -66,12 +67,12 @@ def _connect(auth: SMTPAuth):
     use_starttls = cfg.get("starttls", False)
 
     if use_ssl:
-        server = smtplib.SMTP_SSL(host, port, timeout=20, context=ssl.create_default_context())
+        server = smtplib.SMTP_SSL(host, port, timeout=20, context=ssl.create_default_context(cafile=certifi.where()))
     else:
         server = smtplib.SMTP(host, port, timeout=20)
         server.ehlo()
         if use_starttls:
-            server.starttls(context=ssl.create_default_context())
+            server.starttls(context=ssl.create_default_context(cafile=certifi.where()))
             server.ehlo()
 
     server.login(auth.username, auth.password)
