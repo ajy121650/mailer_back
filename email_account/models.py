@@ -3,6 +3,8 @@ from user.models import User
 from email_account.utils import fernet
 from cryptography.fernet import InvalidToken
 
+# 각 이메일 어카운트 연동 시 프로필 설정해서 DB에 저장하는 view 필요.
+
 
 # Create your models here.
 class EmailAccount(models.Model):
@@ -15,8 +17,7 @@ class EmailAccount(models.Model):
 
     #### 스팸 필터링을 위한 사용자 선호도 필드 ####
     interests = models.JSONField(
-        null=True, blank=True, default=list,
-        help_text="사용자 관심사 목록 (예: ['기술', '스포츠'])"
+        null=True, blank=True, default=list, help_text="사용자 관심사 목록 (예: ['기술', '스포츠'])"
     )
     job = models.CharField(max_length=100, null=True, blank=True, help_text="사용자의 직업")
     usage = models.CharField(max_length=100, null=True, blank=True, help_text="계정의 용도 (예: 개인용, 업무용)")
