@@ -12,6 +12,15 @@ class EmailAccount(models.Model):
     domain = models.CharField(max_length=255)
     address = models.EmailField(unique=True)
     encrypted_password = models.CharField(max_length=255)
+
+    #### 스팸 필터링을 위한 사용자 선호도 필드 ####
+    interests = models.JSONField(
+        null=True, blank=True, default=list,
+        help_text="사용자 관심사 목록 (예: ['기술', '스포츠'])"
+    )
+    job = models.CharField(max_length=100, null=True, blank=True, help_text="사용자의 직업")
+    usage = models.CharField(max_length=100, null=True, blank=True, help_text="계정의 용도 (예: 개인용, 업무용)")
+
     last_synced = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

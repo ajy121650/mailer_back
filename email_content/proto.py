@@ -9,6 +9,9 @@ import uuid
 import boto3
 import email.utils
 
+#### 스팸 필터 로직 추가 ####
+from utils.spam_filter import classify_emails_in_batch
+
 
 # S3 클라이언트
 s3 = boto3.client("s3")
@@ -31,7 +34,10 @@ def fetch_and_store_emails(address):
     """
     1. EmailAccount 조회
     2. IMAP 로그인 → 최근 50개 메일
-    3. Email + EmailMetadata + Attachment 저장
+    #### START: 스팸 필터링 로직 추가 ####
+    3. 가져온 메일들을 스팸 필터로 일괄 분류
+    4. 분류 결과와 함께 Email + EmailMetadata + Attachment 저장
+    #### END: 스팸 필터링 로직 추가 ####
     """
     # 1. 계정 조회
     account = EmailAccount.objects.filter(address=address).first()
@@ -41,7 +47,6 @@ def fetch_and_store_emails(address):
     # 2. IMAP 연결
     try:
         imap_host, imap_port = get_imap_config(account.domain)
-
         imap = imaplib.IMAP4_SSL(imap_host, imap_port)
         imap.login(account.address, account.email_password)
         imap.select("INBOX")
@@ -57,6 +62,8 @@ def fetch_and_store_emails(address):
     all_uids = data[0].split()
     recent_uids = all_uids[-50:] if len(all_uids) > 50 else all_uids
 
+    #### 스팸 필터링을 위한 데이터 준비 단계 ####
+    emails_to_process = []
     for uid in recent_uids:
         status, msg_data = imap.fetch(uid, "(RFC822)")
         raw_msg = msg_data[0][1]
@@ -93,6 +100,7 @@ def fetch_and_store_emails(address):
         # 본문 추출
         text_body, html_body = None, None
         has_attachment = False
+        attachments_data = []
         if msg.is_multipart():
             for part in msg.walk():
                 ctype = part.get_content_type()
@@ -102,60 +110,100 @@ def fetch_and_store_emails(address):
                         part.get_content_charset() or "utf-8", errors="ignore"
                     )
                 elif ctype == "text/html" and "attachment" not in disp:
-                    html_body = part.get_payload(decode=True).decode(
-                        part.get_content_charset() or "utf-8", errors="ignore"
-                    )
-                elif part.get_content_disposition() == "attachment":
+                    html_body = part.get_payload(decode=True).decode(part.get_content_charset() or "utf-8", errors="ignore")
+                
+                if part.get_content_disposition() == "attachment":
                     has_attachment = True
+                    attachments_data.append({
+                        "filename": part.get_filename(),
+                        "bytes": part.get_payload(decode=True),
+                        "content_type": part.get_content_type(),
+                    })
         else:
             if msg.get_content_type() == "text/plain":
                 text_body = msg.get_payload(decode=True).decode(msg.get_content_charset() or "utf-8", errors="ignore")
             elif msg.get_content_type() == "text/html":
                 html_body = msg.get_payload(decode=True).decode(msg.get_content_charset() or "utf-8", errors="ignore")
 
-        # JSONField에 맞게 주소 파싱
-        to_header_json = parse_addresses(to_header)
-        cc_header_json = parse_addresses(cc_header)
-        bcc_header_json = parse_addresses(bcc_header)
+        emails_to_process.append({
+            "uid": uid.decode() if isinstance(uid, bytes) else str(uid),
+            "message_id": message_id,
+            "gm_msgid": gm_msgid,
+            "subject": subject,
+            "from_header": from_header,
+            "to_header": parse_addresses(to_header),
+            "cc_header": parse_addresses(cc_header),
+            "bcc_header": parse_addresses(bcc_header),
+            "text_body": text_body,
+            "html_body": html_body,
+            "has_attachment": has_attachment,
+            "attachments_data": attachments_data,
+            "parsed_date": parsed_date,
+        })
+    #### 스팸 필터링을 위한 데이터 준비 끝 ####
+
+     #### 스팸 필터링 일괄 호출(불러온 50개에 대해) ####
+    emails_for_classification = [
+        {"id": e["uid"], "subject": e["subject"], "body": e["text_body"] or ""}
+        for e in emails_to_process
+    ]
+    
+    classification_results = {}
+    if emails_for_classification:
+        # --- 사용자 선호도 데이터 준비 ---
+        user_preferences = account.interests or {} # account.interests는 JSONField (dict)
+        job_preference = "" # 현재 EmailAccount 모델에 직업 필드 없음
+        usage_preference = "" # 현재 EmailAccount 모델에 계정 용도 필드 없음
+        
+        classification_results = classify_emails_in_batch(
+            emails=emails_for_classification,
+            job=job_preference,
+            interests=user_preferences, # dict 형태로 전달
+            usage=usage_preference
+        )
+    #### END: 스팸 필터 일괄 호출 단계 ####
+
+    #### START: 분류 결과와 함께 DB에 저장하는 단계 ####
+    for email_data in emails_to_process:
+        classification = classification_results.get(email_data["uid"], "inbox")
+        folder = "junk" if classification == "junk" else "inbox"
 
         # 5. EmailContent 저장
         email_obj = EmailContent.objects.create(
-            message_id=message_id,
-            gm_msgid=gm_msgid,
-            subject=subject,
-            from_header=from_header,
-            to_header=to_header_json,
-            cc_header=cc_header_json,
-            bcc_header=bcc_header_json,
-            text_body=text_body,
-            html_body=html_body,
-            has_attachment=has_attachment,
-            date=parsed_date,
+            message_id=email_data["message_id"],
+            gm_msgid=email_data["gm_msgid"],
+            subject=email_data["subject"],
+            from_header=email_data["from_header"],
+            to_header=email_data["to_header"],
+            cc_header=email_data["cc_header"],
+            bcc_header=email_data["bcc_header"],
+            text_body=email_data["text_body"],
+            html_body=email_data["html_body"],
+            has_attachment=email_data["has_attachment"],
+            date=email_data["parsed_date"],
         )
 
         # 6. EmailMetadata 저장
         EmailMetadata.objects.create(
             account=account,
             email=email_obj,
-            uid=uid.decode() if isinstance(uid, bytes) else str(uid),
-            folder="inbox",  # 기본값, 필요시 로직 추가
-            received_at=parsed_date,
-            # 기타 필드는 기본값 사용
+            uid=email_data["uid"],
+            folder=folder,  # <-- 스팸 필터 결과 적용
+            received_at=email_data["parsed_date"],
         )
 
         # 7. 첨부파일 저장
-        for part in msg.walk():
-            if part.get_content_disposition() == "attachment":
-                filename = part.get_filename()
-                file_bytes = part.get_payload(decode=True)
-                s3_path = upload_to_s3(file_bytes, prefix="attachments", ext="bin")
-                Attachment.objects.create(
-                    email=email_obj,
-                    filename=filename,
-                    content_type=part.get_content_type(),
-                    size=len(file_bytes),
-                    s3_path=s3_path,
-                )
+        for att_data in email_data["attachments_data"]:
+            file_bytes = att_data["bytes"]
+            s3_path = upload_to_s3(file_bytes, prefix="attachments", ext="bin")
+            Attachment.objects.create(
+                email=email_obj,
+                filename=att_data["filename"],
+                content_type=att_data["content_type"],
+                size=len(file_bytes),
+                s3_path=s3_path,
+            )
+    #### END: 분류 결과와 함께 DB에 저장하는 단계 ####
 
     imap.close()
     imap.logout()
