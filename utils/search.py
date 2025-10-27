@@ -9,8 +9,8 @@ load_dotenv()
 # ===== 사용자 계정 정보 =====
 EMAIL = os.getenv("EMAIL_ADDRESS")
 PASSWORD = os.getenv("EMAIL_PASSWORD")
-IMAP_SERVER = "imap.gmail.com"       # 네이버: imap.naver.com, Gmail: imap.gmail.com, Outlook: outlook.office365.com
-IMAP_PORT = 993                      # SSL 포트
+IMAP_SERVER = "imap.gmail.com"  # 네이버: imap.naver.com, Gmail: imap.gmail.com, Outlook: outlook.office365.com
+IMAP_PORT = 993  # SSL 포트
 # ===== 1. 서버 연결 =====
 mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
 # ===== 2. 로그인 =====
@@ -44,12 +44,3 @@ else:
 # ===== 5. 연결 종료 =====
 mail.logout()
 print(":흰색_확인_표시: 로그아웃")
-
-
-
-
-
-
-
-
-

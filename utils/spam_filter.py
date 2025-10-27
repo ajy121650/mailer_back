@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
+
 def classify_emails_in_batch(emails: list, job: str, interests: list, usage: str) -> dict:
     """
     여러 이메일과 사용자 선호도를 LLM에 한 번에 보내어 스팸 여부를 분류합니다.
@@ -26,12 +27,12 @@ def classify_emails_in_batch(emails: list, job: str, interests: list, usage: str
     try:
         client = genai.Client(api_key=api_key)
 
-        system_instruction = '''
+        system_instruction = """
         You are a spam classification expert. I will provide you with a user's preferences (job, interests, usage) and a list of emails in a JSON array format.
         Your task is to classify each email as either "junk" or "inbox".
         Your response MUST be a single, valid JSON object where the keys are the email IDs (as strings) and the values are the classification strings ("junk" or "inbox").
         Do not output any other text, explanations, or markdown formatting.
-        '''
+        """
 
         # LLM 프롬프트에 포함시키기 위해 이메일 리스트를 JSON 문자열로 변환
         emails_json_string = json.dumps(emails, indent=2, ensure_ascii=False)
@@ -51,15 +52,11 @@ def classify_emails_in_batch(emails: list, job: str, interests: list, usage: str
         """
 
         config = types.GenerateContentConfig(system_instruction=system_instruction)
-        response = client.models.generate_content(
-            model="gemini-2.5-pro",
-            config=config,
-            contents=user_prompt
-        )
+        response = client.models.generate_content(model="gemini-2.5-pro", config=config, contents=user_prompt)
 
         # LLM의 응답에서 JSON 부분만 추출
-        cleaned_response = response.text.strip().replace('```json', '').replace('```', '').strip()
-        
+        cleaned_response = response.text.strip().replace("```json", "").replace("```", "").strip()
+
         # JSON 응답을 파싱하여 딕셔너리로 변환
         classification_results = json.loads(cleaned_response)
         return classification_results

@@ -59,3 +59,24 @@ class ClerkAuthentication(authentication.BaseAuthentication):
         user, _created = User.objects.get_or_create(user_id=clerk_user_id)
         # DRF는 (user, auth) 튜플을 반환해야 함. auth에 payload를 넘기면 뷰에서 참조 가능
         return (user, payload)
+
+
+######################## API 테스트를 위한 임시 Authentication #############
+class TestAuthentication(authentication.BaseAuthentication):
+    """(API_TEST_MODE=True 일 때 사용) 쿼리 파라미터로 사용자를 인증하는 테스트용 클래스"""
+
+    def authenticate(self, request):
+        # 쿼리 파라미터에서 user_id를 가져옴
+        user_id = request.query_params.get("user_id")
+        if not user_id:
+            return None
+
+        # 테스트용 user_id로 사용자를 찾거나, 없으면 생성
+        user, _created = User.objects.get_or_create(user_id=user_id)
+
+        # (인증된 사용자, 토큰 페이로드) 튜플을 반환
+        # 토큰 페이로드는 테스트용 더미값을 넣어줌
+        return (user, {"sub": user.user_id, "sid": "test_session"})
+
+
+######################## API 테스트를 위한 임시 Authentication ############

@@ -1,4 +1,6 @@
-from rest_framework import generics, permissions, serializers
+from rest_framework import generics, permissions, serializers, status
+from rest_framework.response import Response
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
@@ -68,7 +70,7 @@ class TestPermission(permissions.BasePermission):
             required=False,
             type=OpenApiTypes.STR,
         ),
-    ]
+    ],
 )
 class EmailMetadataListView(generics.ListAPIView):
     """메일 통합 조회를 위한 API View"""
@@ -86,41 +88,35 @@ class EmailMetadataListView(generics.ListAPIView):
         if not user.is_authenticated:
             return EmailMetadata.objects.none()
 
+        # 소프트 딜리트된 메일 제외
+        base_queryset = EmailMetadata.objects.filter(account__user=user, deleted_at__isnull=True)
+
         folder = self.request.query_params.get("folder", None)
         accounts_param = self.request.query_params.get("accounts", None)
         search_query = self.request.query_params.get("query", None)
 
         if folder == "sent":
-            user_email_addresses = list(
-                EmailAccount.objects.filter(user=user).values_list("address", flat=True)
-            )
-            # from_header는 단일 주소 또는 다중 주소를 포함할 수 있으므로, __icontains 사용
-            from_filters = [
-                Q(email__from_header__icontains=addr) for addr in user_email_addresses
-            ]
-            # OR 조건으로 쿼리
+            user_email_addresses = list(EmailAccount.objects.filter(user=user).values_list("address", flat=True))
+            from_filters = [Q(email__from_header__icontains=addr) for addr in user_email_addresses]
             from_query = Q()
             for f in from_filters:
                 from_query |= f
 
-            queryset = EmailMetadata.objects.filter(from_query, account__user=user)
+            queryset = base_queryset.filter(from_query)
             order_by_field = "-email__date"
             account_filter_field = "account__address__in"
 
         else:
-            queryset = EmailMetadata.objects.filter(account__user=user)
+            queryset = base_queryset
             order_by_field = "-received_at"
             account_filter_field = "account__address__in"
 
         if folder and folder != "sent":
             queryset = queryset.filter(folder=folder)
 
-        # 투입한 accounts 파라미터가 있으면 해당 이메일 주소들로 필터링.
         if accounts_param:
             requested_emails = set(accounts_param.split(","))
-            user_emails = set(
-                EmailAccount.objects.filter(user=user).values_list("address", flat=True)
-            )
+            user_emails = set(EmailAccount.objects.filter(user=user).values_list("address", flat=True))
 
             if not requested_emails.issubset(user_emails):
                 invalid_accounts = sorted(list(requested_emails - user_emails))
@@ -130,36 +126,37 @@ class EmailMetadataListView(generics.ListAPIView):
 
             queryset = queryset.filter(**{account_filter_field: list(requested_emails)})
 
-        # 검색 쿼리가 있으면, 여러 필드에 걸쳐 검색
         if search_query:
             queryset = queryset.filter(
                 Q(email__subject__icontains=search_query)
                 | Q(email__from_header__icontains=search_query)
                 | Q(email__text_body__icontains=search_query)
-                | Q(email__to_header__icontains=search_query)  # JSONField 검색
+                | Q(email__to_header__icontains=search_query)
             )
 
         return queryset.order_by(order_by_field)
+
 
 @extend_schema(
     summary="개별 이메일의 조회, 설정, 삭제",
     description="""개별 이메일에 대한 거의 모든 작업을 할 수 있습니다.
 특정 ID를 가진 이메일 하나에 대한 작업을 수행합니다.
 1. GET: 이메일의 상세 정보를 조회합니다. (조회 시 자동으로 '읽음' 상태로 변경됨.)
-2. PATCH: 이메일의 상태(폴더 바꾸기(휴지통, 중요메일함 등), 읽음 여부 설정 등)를 부분적으로 수정합니다.
+2. PATCH: 이메일의 상태(폴더 바꾸기(inbox, sent, starred, spam, trash, 읽음 여부 설정 등)를 부분적으로 수정합니다.
 3. DELETE:
     - 휴지통에 있지 않은 경우: 휴지통으로 이동시키고, 수정된 이메일 정보를 반환합니다. (상태 코드 200)
-    - 휴지통에 있는 경우: 영구 삭제하고, 내용 없는 응답을 반환합니다. (상태 코드 204)
+    - 휴지통에 있는 경우: 영구 삭제(소프트 딜리트)하고, 내용 없는 응답을 반환합니다. (상태 코드 204)
     """,
     request=EmailUpdateSerializer,
     responses={
         200: EmailDetailSerializer,
-        204: None,  # 내용이 없는 성공 응답
+        204: None,
     },
 )
 class EmailUpdateView(generics.RetrieveUpdateDestroyAPIView):
     """특정 이메일의 조회, 수정, 삭제를 위한 API View"""
 
+    http_method_names = ["get", "patch", "delete"]
     permission_classes = [TestPermission]
     queryset = EmailMetadata.objects.all()
 
@@ -170,8 +167,18 @@ class EmailUpdateView(generics.RetrieveUpdateDestroyAPIView):
         return EmailDetailSerializer
 
     def get_queryset(self):
-        """요청한 사용자가 소유한 이메일만 조회하도록 쿼리셋을 필터링합니다."""
-        return super().get_queryset().filter(account__user=self.request.user)
+        """요청한 사용자가 소유하고, 영구 삭제되지 않은 이메일만 조회하도록 쿼리셋을 필터링합니다."""
+        return super().get_queryset().filter(account__user=self.request.user, deleted_at__isnull=True)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs["partial"] = True
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=kwargs.get("partial", False))
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        response_serializer = EmailDetailSerializer(instance)
+        return Response(response_serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -187,7 +194,7 @@ class EmailUpdateView(generics.RetrieveUpdateDestroyAPIView):
         """
         '삭제' 요청을 컨텍스트에 맞게 처리합니다.
         - 휴지통에 있지 않은 경우: 휴지통으로 이동시킵니다.
-        - 휴지통에 있는 경우: 영구 삭제합니다.
+        - 휴지통에 있는 경우: 영구 삭제(소프트 딜리트)합니다.
         """
         instance = self.get_object()
         if instance.folder != "trash":
@@ -197,5 +204,8 @@ class EmailUpdateView(generics.RetrieveUpdateDestroyAPIView):
             serializer = self.get_serializer(instance)
             return Response(serializer.data)
         else:
-            # 영구 삭제 (기본 destroy 호출)
-            return super().destroy(request, *args, **kwargs)
+            # 영구 삭제
+            # 소프트 딜리트 방식. 새로 imap sync를 해도 복구되지 않음.
+            instance.deleted_at = timezone.now()
+            instance.save(update_fields=["deleted_at"])
+            return Response(status=status.HTTP_204_NO_CONTENT)

@@ -9,7 +9,6 @@ from cryptography.fernet import InvalidToken
 # Create your models here.
 class EmailAccount(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="email_accounts")
-    priority = models.PositiveSmallIntegerField(default=1)  # (user, priority) 유니크 권장
     is_valid = models.BooleanField(default=True)
     domain = models.CharField(max_length=255)
     address = models.EmailField(unique=True)
@@ -43,11 +42,6 @@ class EmailAccount(models.Model):
             self.encrypted_password = fernet.encrypt(raw_password.encode()).decode()
         else:
             self.encrypted_password = ""
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=["user", "priority"], name="uniq_user_priority"),
-        ]
 
     def __str__(self):
         return self.address

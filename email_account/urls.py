@@ -1,9 +1,8 @@
-### views import example
-# from .views import PostListView, PostDetailView
-###
+from django.urls import path
+from .views import EmailSyncView
 
 app_name = "email_accounts"
 
 urlpatterns = [
-    # path("", PostListView.as_view()), ### path example
+    path("<int:pk>/sync/", EmailSyncView.as_view(), name="메일 최신 동기화"),
 ]

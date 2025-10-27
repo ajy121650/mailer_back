@@ -22,4 +22,6 @@ dependencies = [
     "graphviz>=0.21",
     "django-extensions>=4.1",
     "pre-commit>=4.3.0",
+    "python-jose>=3.5.0",
+    "boto3>=1.40.59",
 ]

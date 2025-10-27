@@ -17,7 +17,10 @@ class EmailMetadata(models.Model):
         ("trash", "휴지통"),
     ]
     folder = models.CharField(
-        max_length=20, choices=FOLDER_CHOICES, default="inbox", help_text="폴더 지정: inbox(받은 편지함), sent(보낸 편지함), spam(스팸 메일함), starred(별표 편지함), trash(휴지통)"
+        max_length=20,
+        choices=FOLDER_CHOICES,
+        default="inbox",
+        help_text="폴더 지정: inbox(받은 편지함), sent(보낸 편지함), spam(스팸 메일함), starred(별표 편지함), trash(휴지통)",
     )
 
     is_important = models.BooleanField(default=False, help_text="중요 메일 표시 여부")

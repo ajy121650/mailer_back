@@ -13,8 +13,17 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 
+############### 테스트용 ###############
+from dotenv import load_dotenv
+
+# .env 파일 로드
+load_dotenv()
+#######################################
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# API 테스트 모드 환경변수 (테스트용)
+API_TEST_MODE = os.environ.get("API_TEST_MODE") == "True"
 
 
 # Quick-start development settings - unsuitable for production
@@ -160,3 +169,19 @@ SPECTACULAR_SETTINGS = {
 CLERK_ISSUER = "https://<your-clerk-domain>"  # 예: https://example.clerk.accounts.dev
 CLERK_JWKS_URL = f"{CLERK_ISSUER}/.well-known/jwks.json"
 CLERK_AUDIENCE = None  # Session Token 쓰면 보통 None. JWT Template 쓰면 "my-backend" 등으로 세팅
+
+
+# ####################################################################
+# API TEST MODE (Clerk/S3 비활성화)
+# ####################################################################
+# 사용법: .env 파일에 API_TEST_MODE=True 설정
+# 프로덕션 전환 시: 이 블록 전체를 삭제하거나, .env 파일의 값을 False로 바꾸세요.
+# ####################################################################
+if API_TEST_MODE:
+    # 1. 인증 클래스를 Clerk 대신 테스트용 클래스로 변경
+    REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = [
+        "user.auth.TestAuthentication",
+    ]
+
+    # 2. 파일 저장을 S3 대신 로컬 파일 시스템으로 변경
+    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"

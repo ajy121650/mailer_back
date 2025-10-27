@@ -6,6 +6,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 import requests
 
 
+############################################ 테스트용 #################################
 # sign in 된 유저 정보 조회 (인증 필요) test용 지워도 됨
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -16,7 +17,6 @@ class MeView(APIView):
         return Response(
             {
                 "user_id": request.user.user_id,
-                "is_admin": request.user.is_admin,
             }
         )
 
@@ -55,3 +55,6 @@ class SignOutView(APIView):
                 return Response({"error": "Failed to revoke session"}, status=r.status_code)
 
         return Response({"ok": True})
+
+
+#######################################################################################

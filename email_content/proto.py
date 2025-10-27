@@ -9,19 +9,35 @@ import uuid
 import boto3
 import email.utils
 
+########## API 테스트를 위해 추가한 import ##########
+from django.conf import settings
+import os
+
+##################################################
+
 #### 스팸 필터 로직 추가 ####
 from utils.spam_filter import classify_emails_in_batch
 
 
-# S3 클라이언트
-s3 = boto3.client("s3")
-BUCKET_NAME = "my-mailbox-storage"
-
-
 def upload_to_s3(file_bytes, prefix, ext):
-    file_key = f"{prefix}/{uuid.uuid4()}.{ext}"
-    s3.put_object(Bucket=BUCKET_NAME, Key=file_key, Body=file_bytes)
-    return f"s3://{BUCKET_NAME}/{file_key}"
+    ########### API 테스트를 위해서 추가한 함수. ###########
+    # API_TEST_MODE에 따라 S3 또는 로컬에 파일을 저장.
+    if settings.API_TEST_MODE:
+        # 테스트 모드: 로컬 파일 시스템에 저장
+        storage_dir = os.path.join(settings.BASE_DIR, "local_attachments", prefix)
+        os.makedirs(storage_dir, exist_ok=True)
+        file_name = f"{uuid.uuid4()}.{ext}"
+        file_path = os.path.join(storage_dir, file_name)
+        with open(file_path, "wb") as f:
+            f.write(file_bytes)
+        return file_path  # 로컬 파일 경로 반환
+    else:
+        #####################################################
+        s3 = boto3.client("s3")
+        BUCKET_NAME = "my-mailbox-storage"
+        file_key = f"{prefix}/{uuid.uuid4()}.{ext}"
+        s3.put_object(Bucket=BUCKET_NAME, Key=file_key, Body=file_bytes)
+        return f"s3://{BUCKET_NAME}/{file_key}"
 
 
 def parse_addresses(header):
@@ -110,56 +126,61 @@ def fetch_and_store_emails(address):
                         part.get_content_charset() or "utf-8", errors="ignore"
                     )
                 elif ctype == "text/html" and "attachment" not in disp:
-                    html_body = part.get_payload(decode=True).decode(part.get_content_charset() or "utf-8", errors="ignore")
-                
+                    html_body = part.get_payload(decode=True).decode(
+                        part.get_content_charset() or "utf-8", errors="ignore"
+                    )
+
                 if part.get_content_disposition() == "attachment":
                     has_attachment = True
-                    attachments_data.append({
-                        "filename": part.get_filename(),
-                        "bytes": part.get_payload(decode=True),
-                        "content_type": part.get_content_type(),
-                    })
+                    attachments_data.append(
+                        {
+                            "filename": part.get_filename(),
+                            "bytes": part.get_payload(decode=True),
+                            "content_type": part.get_content_type(),
+                        }
+                    )
         else:
             if msg.get_content_type() == "text/plain":
                 text_body = msg.get_payload(decode=True).decode(msg.get_content_charset() or "utf-8", errors="ignore")
             elif msg.get_content_type() == "text/html":
                 html_body = msg.get_payload(decode=True).decode(msg.get_content_charset() or "utf-8", errors="ignore")
 
-        emails_to_process.append({
-            "uid": uid.decode() if isinstance(uid, bytes) else str(uid),
-            "message_id": message_id,
-            "gm_msgid": gm_msgid,
-            "subject": subject,
-            "from_header": from_header,
-            "to_header": parse_addresses(to_header),
-            "cc_header": parse_addresses(cc_header),
-            "bcc_header": parse_addresses(bcc_header),
-            "text_body": text_body,
-            "html_body": html_body,
-            "has_attachment": has_attachment,
-            "attachments_data": attachments_data,
-            "parsed_date": parsed_date,
-        })
+        emails_to_process.append(
+            {
+                "uid": uid.decode() if isinstance(uid, bytes) else str(uid),
+                "message_id": message_id,
+                "gm_msgid": gm_msgid,
+                "subject": subject,
+                "from_header": from_header,
+                "to_header": parse_addresses(to_header),
+                "cc_header": parse_addresses(cc_header),
+                "bcc_header": parse_addresses(bcc_header),
+                "text_body": text_body,
+                "html_body": html_body,
+                "has_attachment": has_attachment,
+                "attachments_data": attachments_data,
+                "parsed_date": parsed_date,
+            }
+        )
     #### 스팸 필터링을 위한 데이터 준비 끝 ####
 
-     #### 스팸 필터링 일괄 호출(불러온 50개에 대해) ####
+    #### 스팸 필터링 일괄 호출(불러온 50개에 대해) ####
     emails_for_classification = [
-        {"id": e["uid"], "subject": e["subject"], "body": e["text_body"] or ""}
-        for e in emails_to_process
+        {"id": e["uid"], "subject": e["subject"], "body": e["text_body"] or ""} for e in emails_to_process
     ]
-    
+
     classification_results = {}
     if emails_for_classification:
         # --- 사용자 선호도 데이터 준비 ---
-        user_preferences = account.interests or {} # account.interests는 JSONField (dict)
-        job_preference = "" # 현재 EmailAccount 모델에 직업 필드 없음
-        usage_preference = "" # 현재 EmailAccount 모델에 계정 용도 필드 없음
-        
+        user_preferences = account.interests or {}  # account.interests는 JSONField (dict)
+        job_preference = ""  # 현재 EmailAccount 모델에 직업 필드 없음
+        usage_preference = ""  # 현재 EmailAccount 모델에 계정 용도 필드 없음
+
         classification_results = classify_emails_in_batch(
             emails=emails_for_classification,
             job=job_preference,
-            interests=user_preferences, # dict 형태로 전달
-            usage=usage_preference
+            interests=user_preferences,  # dict 형태로 전달
+            usage=usage_preference,
         )
     #### END: 스팸 필터 일괄 호출 단계 ####
 
