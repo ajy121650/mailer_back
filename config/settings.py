@@ -159,9 +159,17 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Mailer API",
-    "DESCRIPTION": "API documentation for the Mailer project",
+    "DESCRIPTION": "Mailer project",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "persistAuthorization": True,
+        "displayOperationId": True,
+    },
+    "AUTH_SCHEMA_EXTENSIONS": {
+        "test_auth": "user.auth.TestAuthenticationScheme",
+    },
 }
 
 # Clerk 환경변수

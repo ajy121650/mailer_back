@@ -172,15 +172,17 @@ def fetch_and_store_emails(address):
     classification_results = {}
     if emails_for_classification:
         # --- 사용자 선호도 데이터 준비 ---
+        job_preference = account.job or ""
+        belonging_preference = account.belonging or ""
+        usage_preference = account.usage or ""
         user_preferences = account.interests or {}  # account.interests는 JSONField (dict)
-        job_preference = ""  # 현재 EmailAccount 모델에 직업 필드 없음
-        usage_preference = ""  # 현재 EmailAccount 모델에 계정 용도 필드 없음
-
+        # --- 스팸 필터 일괄 호출 ---
         classification_results = classify_emails_in_batch(
             emails=emails_for_classification,
             job=job_preference,
-            interests=user_preferences,  # dict 형태로 전달
+            belonging=belonging_preference,
             usage=usage_preference,
+            interests=user_preferences,
         )
     #### END: 스팸 필터 일괄 호출 단계 ####
 

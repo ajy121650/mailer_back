@@ -16,7 +16,7 @@ class EmailPreviewSerializer(serializers.ModelSerializer):
             "preview",  # 본문 대신 미리보기 필드 preview 사용.
         ]
 
-    def get_preview(self, obj):
+    def get_preview(self, obj) -> str:
         "본문 내용의 앞 100자를 잘라 미리보기를 생성."
         if obj.text_body:
             return obj.text_body[:100]

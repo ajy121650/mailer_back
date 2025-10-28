@@ -5,18 +5,19 @@ from google import genai
 from google.genai import types
 
 
-def classify_emails_in_batch(emails: list, job: str, interests: list, usage: str) -> dict:
+def classify_emails_in_batch(emails: list, job: str, belonging: str, interests: list, usage: str) -> dict:
     """
     여러 이메일과 사용자 선호도를 LLM에 한 번에 보내어 스팸 여부를 분류합니다.
 
     Args:
         emails (list): 각 요소가 {'id': str, 'subject': str, 'body': str} 형태인 딕셔너리 리스트
         job (str): 사용자의 직업
+        belonging (str): 계정의 소속
         interests (list): 사용자의 관심사 키워드 리스트
         usage (str): 계정의 용도
 
     Returns:
-        dict: 이메일 ID를 키로, 'junk' 또는 'inbox'를 값으로 갖는 딕셔너리
+        dict: 이메일 ID를 키로, 'spam' 또는 'inbox'를 값으로 갖는 딕셔너리
     """
     load_dotenv()
     api_key = os.environ.get("GOOGLE_API_KEY")
@@ -28,9 +29,9 @@ def classify_emails_in_batch(emails: list, job: str, interests: list, usage: str
         client = genai.Client(api_key=api_key)
 
         system_instruction = """
-        You are a spam classification expert. I will provide you with a user's preferences (job, interests, usage) and a list of emails in a JSON array format.
-        Your task is to classify each email as either "junk" or "inbox".
-        Your response MUST be a single, valid JSON object where the keys are the email IDs (as strings) and the values are the classification strings ("junk" or "inbox").
+        You are a spam classification expert. I will provide you with a user's preferences (job, belonging, interests, usage) and a list of emails in a JSON array format.
+        Your task is to classify each email as either "spam" or "inbox".
+        Your response MUST be a single, valid JSON object where the keys are the email IDs (as strings) and the values are the classification strings ("spam" or "inbox").
         Do not output any other text, explanations, or markdown formatting.
         """
 
@@ -42,6 +43,7 @@ def classify_emails_in_batch(emails: list, job: str, interests: list, usage: str
 
         **User Preferences:**
         - 직업: {job}
+        - 소속: {belonging}
         - 관심사: {interests}
         - 계정의 용도: {usage}
 

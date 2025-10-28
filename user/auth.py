@@ -2,6 +2,7 @@ import requests
 from functools import lru_cache
 from jose import jwt
 from django.conf import settings
+from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from rest_framework import authentication, exceptions
 from .models import User
 
@@ -77,6 +78,19 @@ class TestAuthentication(authentication.BaseAuthentication):
         # (인증된 사용자, 토큰 페이로드) 튜플을 반환
         # 토큰 페이로드는 테스트용 더미값을 넣어줌
         return (user, {"sub": user.user_id, "sid": "test_session"})
+
+
+class TestAuthenticationScheme(OpenApiAuthenticationExtension):
+    target_class = "user.auth.TestAuthentication"
+    name = "test_auth"
+
+    def get_security_definition(self, auto_schema):
+        return {
+            "type": "apiKey",
+            "in": "query",
+            "name": "user_id",
+            "description": "테스트용 인증을 위해 쿼리 파라미터에 user_id를 전달합니다.",
+        }
 
 
 ######################## API 테스트를 위한 임시 Authentication ############

@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema, OpenApiTypes, OpenApiExample
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -6,6 +7,36 @@ from .models import EmailAccount
 from email_content.proto import fetch_and_store_emails
 
 
+@extend_schema(
+    summary="이메일 수동 동기화",
+    description="특정 이메일 계정의 메일을 수동으로 동기화합니다.",
+    request=None,  # 요청 본문이 없음을 명시
+    responses={
+        200: OpenApiTypes.OBJECT,
+        400: OpenApiTypes.OBJECT,
+        404: OpenApiTypes.OBJECT,
+        500: OpenApiTypes.OBJECT,
+    },
+    examples=[
+        OpenApiExample(
+            "동기화 성공",
+            value={"message": "user@example.com의 동기화가 완료되었습니다."},
+            response_only=True,
+        ),
+        OpenApiExample(
+            "계정 없음",
+            value={"error": "계정을 찾을 수 없거나 권한이 없습니다."},
+            status_codes=["404"],
+            response_only=True,
+        ),
+        OpenApiExample(
+            "IMAP 동기화 실패",
+            value={"error": "IMAP 동기화 실패: [Errno 111] Connection refused"},
+            status_codes=["500"],
+            response_only=True,
+        ),
+    ],
+)
 class EmailSyncView(APIView):
     """특정 이메일 계정의 메일을 수동으로 동기화합니다."""
 
