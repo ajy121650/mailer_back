@@ -112,3 +112,5 @@ python manage.py runserver
 -   서버가 `http://127.0.0.1:8000/` 에서 실행됩니다.
 -   모든 API 엔드포인트 문서는 **`http://127.0.0.1:8000/api/swagger/`** 에서 확인할 수 있습니다.
 -   `API_TEST_MODE=True`이므로, 모든 API 요청은 자동으로 `testuser`로 인증됩니다. 별도의 인증 헤더 없이 바로 API를 테스트할 수 있습니다.
+
+현재 시연 가능한 api : account, metadata
