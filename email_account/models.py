@@ -16,7 +16,6 @@ class EmailAccount(models.Model):
 
     #### 스팸 필터링을 위한 사용자 선호도 필드 ####
     job = models.CharField(max_length=100, null=True, blank=True, help_text="사용자의 직업")
-    belonging = models.CharField(max_length=100, null=True, blank=True, help_text="계정의 소속 (예: 팀명, 프로젝트명)")
     usage = models.CharField(max_length=100, null=True, blank=True, help_text="계정의 용도 (예: 개인용, 업무용)")
     interests = models.JSONField(
         null=True, blank=True, default=list, help_text="사용자 관심사 목록 (예: ['기술', '스포츠'])"

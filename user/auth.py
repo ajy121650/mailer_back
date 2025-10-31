@@ -64,16 +64,11 @@ class ClerkAuthentication(authentication.BaseAuthentication):
 
 ######################## API 테스트를 위한 임시 Authentication #############
 class TestAuthentication(authentication.BaseAuthentication):
-    """(API_TEST_MODE=True 일 때 사용) 쿼리 파라미터로 사용자를 인증하는 테스트용 클래스"""
+    """(API_TEST_MODE=True 일 때 사용) 모든 요청을 'testuser'로 자동 인증하는 테스트용 클래스"""
 
     def authenticate(self, request):
-        # 쿼리 파라미터에서 user_id를 가져옴
-        user_id = request.query_params.get("user_id")
-        if not user_id:
-            return None
-
-        # 테스트용 user_id로 사용자를 찾거나, 없으면 생성
-        user, _created = User.objects.get_or_create(user_id=user_id)
+        # 무조건 'testuser'로 사용자를 찾거나, 없으면 생성
+        user, _created = User.objects.get_or_create(user_id="testuser")
 
         # (인증된 사용자, 토큰 페이로드) 튜플을 반환
         # 토큰 페이로드는 테스트용 더미값을 넣어줌

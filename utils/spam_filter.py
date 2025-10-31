@@ -5,14 +5,13 @@ from google import genai
 from google.genai import types
 
 
-def classify_emails_in_batch(emails: list, job: str, belonging: str, interests: list, usage: str) -> dict:
+def classify_emails_in_batch(emails: list, job: str, interests: list, usage: str) -> dict:
     """
     여러 이메일과 사용자 선호도를 LLM에 한 번에 보내어 스팸 여부를 분류합니다.
 
     Args:
         emails (list): 각 요소가 {'id': str, 'subject': str, 'body': str} 형태인 딕셔너리 리스트
         job (str): 사용자의 직업
-        belonging (str): 계정의 소속
         interests (list): 사용자의 관심사 키워드 리스트
         usage (str): 계정의 용도
 
@@ -29,28 +28,47 @@ def classify_emails_in_batch(emails: list, job: str, belonging: str, interests: 
         client = genai.Client(api_key=api_key)
 
         system_instruction = """
-        You are a spam classification expert. I will provide you with a user's preferences (job, belonging, interests, usage) and a list of emails in a JSON array format.
-        Your task is to classify each email as either "spam" or "inbox".
-        Your response MUST be a single, valid JSON object where the keys are the email IDs (as strings) and the values are the classification strings ("spam" or "inbox").
-        Do not output any other text, explanations, or markdown formatting.
+        You are a highly intelligent spam classification expert. Your task is to classify a list of emails as either "spam" or "inbox" based on the user's personal and professional context.
+
+        I will provide you with:
+        1.  **User Profile:** Their job, interests, and how they use the email account.
+        2.  **Emails:** A JSON array of emails, each with an ID, subject, and body.
+
+        **Classification Guidelines:**
+        -   **inbox:** Emails that are relevant to the user's job, studies, stated interests, or appear to be important personal or professional communication.
+        -   **spam:** Unsolicited promotional emails, scams, newsletters the user didn't subscribe to, or content completely irrelevant to their profile.
+
+        **Output Format:**
+        Your response MUST be a single, valid JSON object. The keys must be the string email IDs, and the values must be the classification string: "spam" or "inbox".
+
+        **Example:**
+        -   **Input (in user prompt):**
+            User Profile:
+            - Job: "Software Engineer"
+            - Interests: ["Python", "Django"]
+            - Usage: "Work"
+            Emails:
+            [{"id": "101", "subject": "New Python library released!", "body": "..."}, {"id": "102", "subject": "Buy cheap watches", "body": "..."}]
+        -   **Your Output:**
+            {
+              "101": "inbox",
+              "102": "spam"
+            }
+
+        Do not output any other text, explanations, or markdown formatting. Just the JSON object.
         """
 
         # LLM 프롬프트에 포함시키기 위해 이메일 리스트를 JSON 문자열로 변환
         emails_json_string = json.dumps(emails, indent=2, ensure_ascii=False)
 
         user_prompt = f"""
-        Here are the user's preferences and the list of emails to classify.
+        **User Profile:**
+        - Job: {job}
+        - Interests: {interests}
+        - Usage: {usage}
 
-        **User Preferences:**
-        - 직업: {job}
-        - 소속: {belonging}
-        - 관심사: {interests}
-        - 계정의 용도: {usage}
-
-        **Emails to Classify (JSON Array):**
+        **Emails to Classify:**
         {emails_json_string}
-
-        Please classify these emails and return a single JSON object mapping each email ID to its classification ("junk" or "inbox").
         """
 
         config = types.GenerateContentConfig(system_instruction=system_instruction)

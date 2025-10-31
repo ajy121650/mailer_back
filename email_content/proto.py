@@ -173,14 +173,12 @@ def fetch_and_store_emails(address):
     if emails_for_classification:
         # --- 사용자 선호도 데이터 준비 ---
         job_preference = account.job or ""
-        belonging_preference = account.belonging or ""
         usage_preference = account.usage or ""
         user_preferences = account.interests or {}  # account.interests는 JSONField (dict)
         # --- 스팸 필터 일괄 호출 ---
         classification_results = classify_emails_in_batch(
             emails=emails_for_classification,
             job=job_preference,
-            belonging=belonging_preference,
             usage=usage_preference,
             interests=user_preferences,
         )
@@ -189,7 +187,7 @@ def fetch_and_store_emails(address):
     #### START: 분류 결과와 함께 DB에 저장하는 단계 ####
     for email_data in emails_to_process:
         classification = classification_results.get(email_data["uid"], "inbox")
-        folder = "junk" if classification == "junk" else "inbox"
+        folder = "spam" if classification == "spam" else "inbox"
 
         # 5. EmailContent 저장
         email_obj = EmailContent.objects.create(
