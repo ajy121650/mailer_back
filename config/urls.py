@@ -35,10 +35,9 @@ urlpatterns = [
     path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
     # App APIs
     path("api/user/", include("user.urls")),
-    path("api/email/", include("email_content.urls")),
+    path("api/email/", include("email_metadata.urls")),  # 로그인한 계정의 메일 조회.
     path("api/account/", include("email_account.urls")),
     path("api/attachment/", include("email_attachment.urls")),
-    path("api/metadata/", include("email_metadata.urls")),
     path("api/template/", include("template.urls")),
     path("api/contact/", include("contact.urls")),
 ]
