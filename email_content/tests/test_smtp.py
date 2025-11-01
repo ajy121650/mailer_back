@@ -5,7 +5,7 @@ from email_content.service.smtp import send_mail_via_smtp, SMTPAuth
 
 @pytest.fixture
 def auth():
-    return SMTPAuth(username="2019000066@ushs.hs.kr", password="pqbi zyxj zcad lzvn", domain_hint="gmail")
+    return SMTPAuth(username="2019000066@ushs.hs.kr", password="qrez cvzo qvst bnjk", domain_hint="gmail")
 
 
 @patch("email_content.service.smtp.smtplib.SMTP")  # smtplib.SMTP 객체를 모킹
@@ -44,9 +44,30 @@ def test_send_mail_via_smtp(mock_smtp_ssl, mock_smtp, auth):
 
 
 def test_real_send_mail(auth):
+    text = """
+    ପ(๑•ᴗ•๑)ଓ 
+    2025-11-01 메일 잘 받으셨나요?
+     
+    11월 1일 운세 공유 드립니다.
+
+    별자리운세
+    1위 전갈자리 
+    12위 사수자리
+    11위 천칭자리
+    10위 쌍둥이자리
+    9위 사자자리
+    8위 물병자리
+    7위 처녀자리
+    6위 양자리
+    5위 황소자리
+    4위 염소자리
+    2위 개자리
+    3위 물고기자리
+    """
+
     result = send_mail_via_smtp(
         auth=auth,
-        subject="[SMTP 실제 발송 테스트]",
+        subject="[*Mailer*]",
         sender=auth.username,
         to=[
             "ajy1216@snu.ac.kr",
@@ -54,7 +75,18 @@ def test_real_send_mail(auth):
             "korj03kory@snu.ac.kr",
             "bona718@snu.ac.kr",
             "jdnjsyoo@snu.ac.kr",
+            "smkl1004@snu.ac.kr",
+            "todd4@snu.ac.kr",
+            "ggaggu@snu.ac.kr",
+            "seraphina0911@snu.ac.kr",
+            "seatosky2002@gmail.com",
+            "lgmoo2002@snu.ac.kr",
+            "0422ll@snu.ac.kr",
+            "jych1109@snu.ac.kr",
+            "swanchoi1102@snu.ac.kr",
+            "chldmstjr0122@gmail.com",
+            "paxjc2000@snu.ac.kr",
         ],
-        text_body="이 메일은 실제 SMTP 서버를 통해 발송된 테스트 메일입니다. 성공적으로 도착했나요? 제발",
+        text_body=text,
     )
     print(result)
