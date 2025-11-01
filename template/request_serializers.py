@@ -2,7 +2,13 @@ from rest_framework import serializers
 from .models import Template
 
 
-class TemplateUpdateRequestSerializer(serializers.ModelSerializer):
+class MyTemplateCreateRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = Template
-        fields = ["email_account", "template_content", "main_category", "sub_category", "topic"]
+        fields = ["template_content", "template_title", "sub_category", "topic"]
+
+
+class MyTemplateUpdateRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Template
+        fields = ["sub_category", "topic", "template_title", "template_content"]

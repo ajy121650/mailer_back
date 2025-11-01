@@ -10,9 +10,9 @@ from email_account.models import EmailAccount
 # Create your models here.
 class Template(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="templates")
-    email_account = models.ForeignKey(EmailAccount, on_delete=models.CASCADE, related_name="templates")
+    email_account = models.ForeignKey(EmailAccount, on_delete=models.CASCADE, related_name="templates", blank=True)
     template_content = models.CharField(max_length=255)
-    title = models.CharField(max_length=255, default="")
+    template_title = models.CharField(max_length=255, default="")
     main_category = models.CharField(max_length=100)
     sub_category = models.CharField(max_length=100)
     topic = models.CharField(max_length=100)

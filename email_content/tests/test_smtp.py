@@ -44,25 +44,146 @@ def test_send_mail_via_smtp(mock_smtp_ssl, mock_smtp, auth):
 
 
 def test_real_send_mail(auth):
-    text = """
-    ପ(๑•ᴗ•๑)ଓ 
-    2025-11-01 메일 잘 받으셨나요?
-     
-    11월 1일 운세 공유 드립니다.
+    html_text = """
+    <!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>11월 1일 운세</title>
+  <!-- 일부 클라이언트의 다크모드/폰트 대응 -->
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light">
+  <style>
+    /* 모바일에서 텍스트 크기 자동 확대 방지 (iOS) */
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    /* Outlook용 이미지 간격 버그 방지 */
+    img { -ms-interpolation-mode: bicubic; }
+  </style>
+</head>
+<body style="margin:0; padding:0; background-color:#f5f7fb;">
+  <!-- 프리헤더(미리보기 문구) -->
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
+    2025-11-01 메일 잘 받으셨나요? 11월 1일 별자리 운세를 확인해보세요.
+  </div>
 
-    별자리운세
-    1위 전갈자리 
-    12위 사수자리
-    11위 천칭자리
-    10위 쌍둥이자리
-    9위 사자자리
-    8위 물병자리
-    7위 처녀자리
-    6위 양자리
-    5위 황소자리
-    4위 염소자리
-    2위 개자리
-    3위 물고기자리
+  <!-- 전체 래퍼 -->
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+    <tr>
+      <td align="center" style="padding:24px;">
+        <!-- 카드 -->
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,0.04);">
+          <!-- 헤더 -->
+          <tr>
+            <td style="padding:28px 28px 16px 28px; background:linear-gradient(135deg,#eef3ff,#ffffff);">
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#1f2937; font-size:20px; line-height:1.5;">
+                <span style="font-size:24px;">ପ(๑•ᴗ•๑)ଓ</span><br>
+                <strong>2025-11-01 메일 잘 받으셨나요?</strong>
+              </div>
+            </td>
+          </tr>
+
+          <!-- 본문 인사 -->
+          <tr>
+            <td style="padding:0 28px 8px 28px;">
+              <p style="margin:0; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#374151; font-size:15px; line-height:1.7;">
+                11월 1일 운세 공유 드립니다.
+              </p>
+            </td>
+          </tr>
+
+          <!-- 섹션 타이틀 -->
+          <tr>
+            <td style="padding:8px 28px 0 28px;">
+              <h2 style="margin:0; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#111827; font-size:18px; line-height:1.5;">
+                ⭐ 별자리운세
+              </h2>
+            </td>
+          </tr>
+
+          <!-- 순위 리스트 (표 형식: 이메일 호환성 우수) -->
+          <tr>
+            <td style="padding:12px 20px 24px 20px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate; border-spacing:0 8px;">
+                <!-- 1위 -->
+                <tr>
+                  <td style="width:72px; background:#f1f5ff; border-radius:8px; text-align:center; padding:10px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#1d4ed8; font-weight:700; font-size:14px;">1위</td>
+                  <td style="background:#f9fbff; border-radius:8px; padding:10px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#1f2937; font-size:14px;">전갈자리</td>
+                </tr>
+                <!-- 12위 -->
+                <tr>
+                  <td style="width:72px; background:#fff7f7; border-radius:8px; text-align:center; padding:10px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#b91c1c; font-weight:700; font-size:14px;">12위</td>
+                  <td style="background:#fffafa; border-radius:8px; padding:10px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#1f2937; font-size:14px;">사수자리</td>
+                </tr>
+                <!-- 11위 -->
+                <tr>
+                  <td style="width:72px; background:#f8fafc; border-radius:8px; text-align:center; padding:10px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#6b7280; font-weight:700; font-size:14px;">11위</td>
+                  <td style="background:#fbfdff; border-radius:8px; padding:10px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#1f2937; font-size:14px;">천칭자리</td>
+                </tr>
+                <!-- 10위 -->
+                <tr>
+                  <td style="width:72px; background:#f8fafc; border-radius:8px; text-align:center; padding:10px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#6b7280; font-weight:700; font-size:14px;">10위</td>
+                  <td style="background:#fbfdff; border-radius:8px; padding:10px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#1f2937; font-size:14px;">쌍둥이자리</td>
+                </tr>
+                <!-- 9위 -->
+                <tr>
+                  <td style="width:72px; background:#f8fafc; border-radius:8px; text-align:center; padding:10px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#6b7280; font-weight:700; font-size:14px;">9위</td>
+                  <td style="background:#fbfdff; border-radius:8px; padding:10px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#1f2937; font-size:14px;">사자자리</td>
+                </tr>
+                <!-- 8위 -->
+                <tr>
+                  <td style="width:72px; background:#f8fafc; border-radius:8px; text-align:center; padding:10px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#6b7280; font-weight:700; font-size:14px;">8위</td>
+                  <td style="background:#fbfdff; border-radius:8px; padding:10px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#1f2937; font-size:14px;">물병자리</td>
+                </tr>
+                <!-- 7위 -->
+                <tr>
+                  <td style="width:72px; background:#f8fafc; border-radius:8px; text-align:center; padding:10px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#6b7280; font-weight:700; font-size:14px;">7위</td>
+                  <td style="background:#fbfdff; border-radius:8px; padding:10px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#1f2937; font-size:14px;">처녀자리</td>
+                </tr>
+                <!-- 6위 -->
+                <tr>
+                  <td style="width:72px; background:#f8fafc; border-radius:8px; text-align:center; padding:10px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#6b7280; font-weight:700; font-size:14px;">6위</td>
+                  <td style="background:#fbfdff; border-radius:8px; padding:10px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#1f2937; font-size:14px;">양자리</td>
+                </tr>
+                <!-- 5위 -->
+                <tr>
+                  <td style="width:72px; background:#eefbf3; border-radius:8px; text-align:center; padding:10px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#047857; font-weight:700; font-size:14px;">5위</td>
+                  <td style="background:#f5fdf8; border-radius:8px; padding:10px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#1f2937; font-size:14px;">황소자리</td>
+                </tr>
+                <!-- 4위 -->
+                <tr>
+                  <td style="width:72px; background:#eefbf3; border-radius:8px; text-align:center; padding:10px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#047857; font-weight:700; font-size:14px;">4위</td>
+                  <td style="background:#f5fdf8; border-radius:8px; padding:10px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#1f2937; font-size:14px;">염소자리</td>
+                </tr>
+                <!-- 2위 -->
+                <tr>
+                  <td style="width:72px; background:#e7f5ff; border-radius:8px; text-align:center; padding:10px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#0ea5e9; font-weight:800; font-size:14px;">2위</td>
+                  <td style="background:#f3faff; border-radius:8px; padding:10px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#1f2937; font-size:14px;">게자리</td>
+                </tr>
+                <!-- 3위 -->
+                <tr>
+                  <td style="width:72px; background:#e7f5ff; border-radius:8px; text-align:center; padding:10px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#0ea5e9; font-weight:800; font-size:14px;">3위</td>
+                  <td style="background:#f3faff; border-radius:8px; padding:10px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#1f2937; font-size:14px;">물고기자리</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- 푸터 -->
+          <tr>
+            <td style="padding:18px 28px 28px 28px; border-top:1px solid #eef2f7;">
+              <p style="margin:0; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, NotoSansKR, Arial, sans-serif; color:#6b7280; font-size:12px; line-height:1.6;">
+                본 메일은 보기 전용 HTML 예시입니다. 답장은 이 주소로 회신해주세요.
+              </p>
+            </td>
+          </tr>
+        </table>
+        <!-- 카드 끝 -->
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
     """
 
     result = send_mail_via_smtp(
@@ -70,6 +191,11 @@ def test_real_send_mail(auth):
         subject="[*Mailer*]",
         sender=auth.username,
         to=[
+            "rhj080471i@snu.ac.kr",
+            "hoyaho03@snu.ac.kr",
+            "paull07@snu.ac.kr",
+            "almighty5@snu.ac.kr",
+            "eunjae1004@snu.ac.kr",
             "ajy1216@snu.ac.kr",
             "dongin1001@snu.ac.kr",
             "korj03kory@snu.ac.kr",
@@ -87,6 +213,6 @@ def test_real_send_mail(auth):
             "chldmstjr0122@gmail.com",
             "paxjc2000@snu.ac.kr",
         ],
-        text_body=text,
+        html_body=html_text,
     )
     print(result)
