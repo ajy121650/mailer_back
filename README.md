@@ -66,9 +66,10 @@ cp .env.example .env
 
 4.  **`GOOGLE_API_KEY`**: 스팸 필터링 기능을 위해 필요합니다. [Google AI Studio](https://aistudio.google.com/app/apikey)에서 빠르게 발급받을 수 있습니다. (없어도 서버 실행은 가능)
 
-5.  **`API_TEST_MODE`**: **반드시 `True`로 설정해주세요.** Clerk 인증을 비활성화하여 쉽게 API를 테스트할 수 있습니다.
+5.  **`CLERK_TURN_OFF` / `S3_TURN_OFF`**: **반드시 `True`로 설정해주세요.** Clerk 인증 및 S3 파일 업로드를 비활성화하여 로컬 환경에서 쉽게 API를 테스트할 수 있습니다.
     ```env
-    API_TEST_MODE=True
+    CLERK_TURN_OFF=True
+    S3_TURN_OFF=True
     ```
 
 완성된 `.env` 파일은 아래와 같은 모습입니다.
@@ -86,8 +87,11 @@ GOOGLE_API_KEY="API 키"
 EMAIL_ADDRESS="test@test.com"
 EMAIL_PASSWORD="xxxx xxxx xxxx xxxx" (16자)
 
-#API 테스트를 하기 위한 변수 설정.
-API_TEST_MODE=True
+# Clerk 인증 비활성화
+CLERK_TURN_OFF=True
+
+# S3 업로드 비활성화
+S3_TURN_OFF=True
 ```
 
 ### 5단계: 데이터베이스 및 테스트 데이터 생성
@@ -111,6 +115,4 @@ python manage.py runserver
 
 -   서버가 `http://127.0.0.1:8000/` 에서 실행됩니다.
 -   모든 API 엔드포인트 문서는 **`http://127.0.0.1:8000/api/swagger/`** 에서 확인할 수 있습니다.
--   `API_TEST_MODE=True`이므로, 모든 API 요청은 자동으로 `testuser`로 인증됩니다. 별도의 인증 헤더 없이 바로 API를 테스트할 수 있습니다.
-
-현재 시연 가능한 api : account, metadata
+-   `CLERK_TURN_OFF=True`이므로, 모든 API 요청은 자동으로 `testuser`로 인증됩니다. 별도의 인증 헤더 없이 바로 API를 테스트할 수 있습니다.
