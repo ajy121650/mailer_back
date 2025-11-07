@@ -133,3 +133,11 @@ class EmailUpdateSerializer(serializers.ModelSerializer):
             "is_important": {"required": False},
             "is_pinned": {"required": False},
         }
+
+
+# 메일 요약 생성 및 조회를 위한 시리얼라이저
+class EmailSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmailMetadata
+        fields = ["id", "summarized_content", "is_summarized"]
+        read_only_fields = ["id", "summarized_content", "is_summarized"]

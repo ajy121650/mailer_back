@@ -2,16 +2,25 @@ from rest_framework import generics, permissions, serializers, status
 from rest_framework.response import Response
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
+
 from django.db.models import Q
 from .models import EmailMetadata
 from .serializers import (
     EmailDetailSerializer,
     EmailUpdateSerializer,
     EmailMetadataListSerializer,
+    EmailSummarySerializer,
 )
 from email_account.models import EmailAccount
+
+# 메일 요약을 위해 import한 부분
+from utils.summarizer import summarize_email_content
+from rest_framework.views import APIView
+
+#############################
 
 User = get_user_model()
 
@@ -71,6 +80,11 @@ class TestPermission(permissions.BasePermission):
             type=OpenApiTypes.STR,
         ),
     ],
+    responses={
+        200: EmailMetadataListSerializer(many=True),
+        400: OpenApiTypes.OBJECT,
+        401: OpenApiTypes.OBJECT,
+    },
 )
 class EmailMetadataListView(generics.ListAPIView):
     """메일 통합 조회를 위한 API View"""
@@ -151,6 +165,9 @@ class EmailMetadataListView(generics.ListAPIView):
     responses={
         200: EmailDetailSerializer,
         204: None,
+        400: OpenApiTypes.OBJECT,
+        401: OpenApiTypes.OBJECT,
+        404: OpenApiTypes.OBJECT,
     },
 )
 class EmailUpdateView(generics.RetrieveUpdateDestroyAPIView):
@@ -209,3 +226,71 @@ class EmailUpdateView(generics.RetrieveUpdateDestroyAPIView):
             instance.deleted_at = timezone.now()
             instance.save(update_fields=["deleted_at"])
             return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# 메일 요약을 위한 view
+# ----------------------------------------------------------------
+class EmailSummarizeView(APIView):
+    permission_classes = [TestPermission]
+    resummarize = False  # Default value, will be overridden by as_view()
+
+    @extend_schema(
+        summary="메일 요약 요청 / 재생성 요청",
+        description="""특정 메일(`email_metadata_id`)의 요약을 LLM에 요청하고 결과를 받아 DB에 저장한 후, 프론트엔드로 리턴합니다.
+        기본적으로 `is_summarized` 필드를 확인하여, `False`일 경우에만 LLM을 호출합니다. `True`라면 DB에 저장된 기존 요약본을 즉시 반환합니다.
+        `/resummarize/` 엔드포인트로 요청 시, `is_summarized` 필드와 관계없이 항상 LLM을 새로 호출하여 기존 `summarized_content`를 덮어씁니다.""",
+        responses={
+            200: EmailSummarySerializer,
+            400: OpenApiTypes.OBJECT,
+            401: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT,
+            503: OpenApiTypes.OBJECT,
+        },
+        examples=[
+            OpenApiExample(
+                "요약 성공 (기존 또는 신규)",
+                value={"id": 123, "summarized_content": "이것은 LLM이 요약한 내용입니다...", "is_summarized": True},
+                response_only=True,
+            ),
+            OpenApiExample(
+                "LLM 서비스 오류",
+                value={"detail": "The summarization service got error. try again."},
+                response_only=True,
+                status_codes=["503"],
+            ),
+        ],
+    )
+    def post(self, request, *args, **kwargs):
+        resummarize_flag = getattr(self, "resummarize", False)  # Get the flag
+
+        try:
+            metadata = EmailMetadata.objects.get(pk=kwargs["pk"], account__user=request.user)
+        except EmailMetadata.DoesNotExist:
+            return Response({"error": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # 재요청이 아니며, 이미 요약된 경우 기존 요약본 반환
+        if not resummarize_flag and metadata.is_summarized and metadata.summarized_content:
+            serializer = EmailSummarySerializer(metadata)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        email_content = metadata.email
+        if not email_content.text_body:
+            return Response(
+                {"error": "Email body is empty."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        summary = summarize_email_content(email_content.subject, email_content.text_body)
+
+        if not summary:
+            return Response(
+                {"error": "The summarization service got error. try again."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        metadata.summarized_content = summary
+        metadata.is_summarized = True
+        metadata.save(update_fields=["summarized_content", "is_summarized"])
+
+        serializer = EmailSummarySerializer(metadata)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -57,6 +57,8 @@ def classify_emails_in_batch(emails: list, job: str, interests: list, usage: str
 
         Do not output any other text, explanations, or markdown formatting. Just the JSON object.
         """
+        # 1. 청크 단위 줄이기 2. 스팸에 대한 정의가 모호하다. 오히려 JSON 포맷으로 가능한 토픽 20개 정도 주루룩 늘여놓고 마지막에 이것도 다 아니면 스팸메일로 처리. 이 카테고리 중 하나로 분류해줘.
+        # 그리고 매 메일마다 iteration 돌리기. 기존에 spam으로 된거 유지하는 것도 괜찮아보이는데.
 
         # LLM 프롬프트에 포함시키기 위해 이메일 리스트를 JSON 문자열로 변환
         emails_json_string = json.dumps(emails, indent=2, ensure_ascii=False)
@@ -84,3 +86,8 @@ def classify_emails_in_batch(emails: list, job: str, interests: list, usage: str
     except Exception as e:
         print(f"An error occurred during the batch classification API call: {e}")
         return {}
+
+
+# 스팸메일 처리 로직 피드백.
+# 정확도로 하려면 있는 태그들 중 하나를 골라서 집어넣어달라고 지시를 주면 그게 좋을 것 같다.
+# 개별 메일 단위로 iteration하고 검증용 요청도 하나 보내놓는 거 좋아보임.

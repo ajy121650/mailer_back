@@ -91,14 +91,15 @@ def fetch_and_store_emails(address):
         if imap_host == "imap.gmail.com":
             gm_msgid = msg.get("X-GM-MSGID")
 
-        # 중복 스킵 로직
+        # 중복 스킵 로직 (EmailMetadata를 통해 계정별로 확인)
+        # 이메일이 이미 해당 계정에 대해 저장되었는지 확인
         if imap_host == "imap.gmail.com":
             # Gmail은 gm_msgid를 사용해서 중복 체크
-            if EmailContent.objects.filter(gm_msgid=gm_msgid).exists():
+            if EmailMetadata.objects.filter(account=account, email__gm_msgid=gm_msgid).exists():
                 continue
         else:
             # 그 외는 message_id로만 중복 체크
-            if EmailContent.objects.filter(message_id=message_id).exists():
+            if EmailMetadata.objects.filter(account=account, email__message_id=message_id).exists():
                 continue
 
         subject = msg.get("Subject", "")
