@@ -1,0 +1,15 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.1 # ruff-pre-commit 최신 버전
+    hooks:
+      - id: ruff
+        args: [--fix, --line-length=120] # 자동 수정 + 한 줄 최대 길이 120
+      - id: ruff-format
+        args: [--line-length=120]
+
+  - repo: https://github.com/psf/black
+    rev: 25.9.0 # black 최신 버전
+    hooks:
+      - id: black
+        language_version: python3.10
+        args: [--line-length=120]

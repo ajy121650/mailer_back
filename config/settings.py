@@ -13,15 +13,27 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 
+############### 테스트용 ###############
+from dotenv import load_dotenv
+
+# .env 파일 로드
+load_dotenv()
+#######################################
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Clerk 사용 안함 환경변수 (테스트용)
+CLERK_TURN_OFF = os.environ.get("CLERK_TURN_OFF") == "True"
+
+# S3 사용 안함 환경변수 (테스트용)
+S3_TURN_OFF = os.environ.get("S3_TURN_OFF") == "True"
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY')
+SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -33,64 +45,63 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     # Local Apps
-    'user',
-    'mail',
-    'contact',
-
+    "user",
+    "email_content",
+    "email_account",
+    "email_attachment",
+    "email_metadata",
+    "template",
+    "contact",
     # Third-party Apps
-
-    # 
-    'rest_framework',
-
-    #drf 문서 자동생성용 앱
-    'drf_spectacular',
-
+    "rest_framework",
+    # drf 문서 자동생성용 앱
+    "drf_spectacular",
     # Django Apps
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'config.urls'
+ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
+WSGI_APPLICATION = "config.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
@@ -100,16 +111,16 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -117,9 +128,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -129,30 +140,60 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-
-
-# Custom User model 설정
-AUTH_USER_MODEL = 'user.User'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Fernet encryption key for EmailAccount passwords
 # Loaded from .env file
-FERNET_KEY = os.environ.get('FERNET_KEY')
+FERNET_KEY = os.environ.get("FERNET_KEY")
 
 # Django REST Framework & drf-spectacular settings
 REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "user.auth.ClerkAuthentication",
+    ],
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Mailer API',
-    'DESCRIPTION': 'API documentation for the Mailer project',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
+    "TITLE": "Mailer API",
+    "DESCRIPTION": "Mailer project",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "persistAuthorization": True,
+        "displayOperationId": True,
+    },
+    "AUTH_SCHEMA_EXTENSIONS": {
+        "test_auth": "user.auth.TestAuthenticationScheme",
+    },
 }
+
+# Clerk 환경변수
+# CLERK_ISSUER는 Clerk 대시보드에서 복사
+CLERK_ISSUER = "https://<your-clerk-domain>"  # 예: https://example.clerk.accounts.dev
+CLERK_JWKS_URL = f"{CLERK_ISSUER}/.well-known/jwks.json"
+CLERK_AUDIENCE = None  # Session Token 쓰면 보통 None. JWT Template 쓰면 "my-backend" 등으로 세팅
+
+
+# ####################################################################
+# API TEST MODE (Clerk/S3 비활성화)
+# ####################################################################
+# 사용법: .env 파일에 API_TEST_MODE=True 설정
+# 프로덕션 전환 시: 이 블록 전체를 삭제하거나, .env 파일의 값을 False로 바꾸세요.
+# ####################################################################
+if CLERK_TURN_OFF:
+    # 1. 인증 클래스를 Clerk 대신 테스트용 클래스로 변경
+    REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = [
+        "user.auth.TestAuthentication",
+    ]
+
+if S3_TURN_OFF:
+    # 2. 파일 저장을 S3 대신 로컬 파일 시스템으로 변경
+    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
