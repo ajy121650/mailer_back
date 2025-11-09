@@ -1,10 +1,10 @@
 import imaplib
 import email
-from .models import EmailContent
+from email_content.models import EmailContent
 from email_account.models import EmailAccount
 from email_attachment.models import Attachment
 from email_metadata.models import EmailMetadata
-from .utils import get_imap_config
+from email_content.utils import get_imap_config
 import uuid
 import boto3
 import email.utils
@@ -62,7 +62,11 @@ def fetch_and_store_emails(address):
 
     # 2. IMAP 연결
     try:
-        imap_host, imap_port = get_imap_config(account.domain)
+        imap_config = get_imap_config(account.domain)
+        imap_host = imap_config["host"]
+        imap_port = imap_config["port"]
+        # 필요하다면 ssl 옵션도 imap_config["ssl"]로 사용 가능
+
         imap = imaplib.IMAP4_SSL(imap_host, imap_port)
         imap.login(account.address, account.email_password)
         imap.select("INBOX")

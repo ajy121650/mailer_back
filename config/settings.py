@@ -181,6 +181,12 @@ CLERK_ISSUER = "https://<your-clerk-domain>"  # 예: https://example.clerk.accou
 CLERK_JWKS_URL = f"{CLERK_ISSUER}/.well-known/jwks.json"
 CLERK_AUDIENCE = None  # Session Token 쓰면 보통 None. JWT Template 쓰면 "my-backend" 등으로 세팅
 
+# SMTP 기본 발신자 이메일 주소
+DEFAULT_FROM_EMAIL = os.getenv("SMTP_DEFAULT_SENDER", "no-reply@example.com")
+
+# (선택) 캐시로 멱등성/레이트리밋
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+
 
 # ####################################################################
 # API TEST MODE (Clerk/S3 비활성화)
