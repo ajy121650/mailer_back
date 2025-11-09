@@ -3,15 +3,24 @@ from user.models import User
 from email_account.utils import fernet
 from cryptography.fernet import InvalidToken
 
+# 각 이메일 어카운트 연동 시 프로필 설정해서 DB에 저장하는 view 필요.
+
 
 # Create your models here.
 class EmailAccount(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="email_accounts")
-    priority = models.PositiveSmallIntegerField(default=1)  # (user, priority) 유니크 권장
     is_valid = models.BooleanField(default=True)
     domain = models.CharField(max_length=255)
     address = models.EmailField(unique=True)
     encrypted_password = models.CharField(max_length=255)
+
+    #### 스팸 필터링을 위한 사용자 선호도 필드 ####
+    job = models.CharField(max_length=100, null=True, blank=True, help_text="사용자의 직업")
+    usage = models.CharField(max_length=100, null=True, blank=True, help_text="계정의 용도 (예: 개인용, 업무용)")
+    interests = models.JSONField(
+        null=True, blank=True, default=list, help_text="사용자 관심사 목록 (예: ['기술', '스포츠'])"
+    )
+
     last_synced = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -33,11 +42,6 @@ class EmailAccount(models.Model):
             self.encrypted_password = fernet.encrypt(raw_password.encode()).decode()
         else:
             self.encrypted_password = ""
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=["user", "priority"], name="uniq_user_priority"),
-        ]
 
     def __str__(self):
         return self.address
