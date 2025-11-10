@@ -6,7 +6,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("email_account", "0002_rename_email_emailaccount_address"),
+        ("email_account", "0001_initial"),
         ("template", "0001_initial"),
     ]
 

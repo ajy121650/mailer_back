@@ -47,18 +47,33 @@ prompt_text = """
 
   Emails:
   [
-    {{"id": "101", "subject": "New Python library released!", "body": "..."}},
-    {{"id": "102", "subject": "Buy cheap watches", "body": "..."}}
+    {"id": "101", "subject": "New Python library released!", "body": "..."},
+    {"id": "102", "subject": "Buy cheap watches", "body": "..."}
   ]
 
   Your Output:
-  {{
+  {
     "101": "inbox",
     "102": "spam"
-  }}
-
-  ### Output Format
-  {format_instructions}
+  }
 
   Do not output anything other than the JSON object.
+"""
+
+repair_prompt_text = """
+You tried to produce structured JSON but failed. Fix it now.
+
+Return ONLY a valid JSON object mapping each email id (string) to "spam" or "inbox".
+No comments or markdown. Example: {{"101":"inbox","102":"spam"}}
+
+User Profile:
+- Job: {job}
+- Interests: {interests}
+- Usage: {usage}
+
+Emails:
+{emails}
+
+If helpful, here's the previous error:
+{error}
 """
