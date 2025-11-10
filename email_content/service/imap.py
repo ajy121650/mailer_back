@@ -193,6 +193,7 @@ def fetch_and_store_emails(address):
     for email_data in emails_to_process:
         classification = classification_results.get(email_data["uid"], "inbox")
         folder = "spam" if classification == "spam" else "inbox"
+        is_spammed = classification == "spam"
 
         # 5. EmailContent 저장
         email_obj = EmailContent.objects.create(
@@ -215,6 +216,7 @@ def fetch_and_store_emails(address):
             email=email_obj,
             uid=email_data["uid"],
             folder=folder,  # <-- 스팸 필터 결과 적용
+            is_spammed=is_spammed,
             received_at=email_data["parsed_date"],
         )
 
