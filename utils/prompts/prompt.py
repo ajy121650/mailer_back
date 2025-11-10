@@ -47,15 +47,15 @@ prompt_text = """
 
   Emails:
   [
-    {"id": "101", "subject": "New Python library released!", "body": "..."},
-    {"id": "102", "subject": "Buy cheap watches", "body": "..."}
+    {{"id": "101", "subject": "New Python library released!", "body": "..."}},
+    {{"id": "102", "subject": "Buy cheap watches", "body": "..."}}
   ]
 
   Your Output:
-  {
+  {{
     "101": "inbox",
     "102": "spam"
-  }
+  }}
 
   Do not output anything other than the JSON object.
 """
@@ -73,7 +73,4 @@ User Profile:
 
 Emails:
 {emails}
-
-If helpful, here's the previous error:
-{error}
 """

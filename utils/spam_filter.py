@@ -51,7 +51,7 @@ def classify_node(state: SpamState) -> SpamState:
     classify_prompt = PromptTemplate.from_template(prompt_text)
 
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-pro",
+        model="gemini-2.0-flash-exp",  # flash 모델은 더 빠르고 quota가 넉넉함
         temperature=0,
         google_api_key=api_key,
     ).with_structured_output(ClassificationResult)
@@ -84,7 +84,7 @@ def repair_node(state: SpamState) -> SpamState:
         return {"error": "GOOGLE_API_KEY not found"}
 
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-pro",
+        model="gemini-2.0-flash-exp",  # flash 모델은 더 빠르고 quota가 넉넉함
         temperature=0,
         google_api_key=api_key,
     )
@@ -142,6 +142,6 @@ def classify_emails_in_batch(emails: list, job: str, interests: list, usage: str
     """
     app = build_spam_graph()
     state = {"emails": emails, "job": job, "interests": interests, "usage": usage}
-    result = app.invoke(state)
+    final_state = app.invoke(state)
 
-    return result.get("result", {})
+    return final_state.get("result", {})
