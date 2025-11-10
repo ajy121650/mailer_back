@@ -1,8 +1,26 @@
 import os
 import json
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+from langchain_core.output_parsers import StructuredOutputParser, ResponseSchema, RetryWithErrorFixingParser
+from langchain_core.prompts import PromptTemplate
+from langchain import LLMChain
+from utils.prompts.prompt import prompt_text
+
+# 스팸메일 처리 로직 피드백.
+# 정확도로 하려면 있는 태그들 중 하나를 골라서 집어넣어달라고 지시를 주면 그게 좋을 것 같다.
+# 개별 메일 단위로 iteration하고 검증용 요청도 하나 보내놓는 거 좋아보임.
+
+response_schemas = [
+    ResponseSchema(
+        name="classification",
+        description='A JSON object mapping each email "id" (string) to "spam" or "inbox". Example: {"101": "inbox", "102": "spam"}',
+    )
+]
+
+structured_parser = StructuredOutputParser.from_response_schemas(response_schemas)
+format_instructions = structured_parser.get_format_instructions()
 
 
 def classify_emails_in_batch(emails: list, job: str, interests: list, usage: str) -> dict:
@@ -24,70 +42,44 @@ def classify_emails_in_batch(emails: list, job: str, interests: list, usage: str
         print("Error: GOOGLE_API_KEY not found in .env file")
         return {}
 
+    spam_filter_prompt = PromptTemplate.from_template(prompt_text)
+
+    # LLM 초기화
     try:
-        client = genai.Client(api_key=api_key)
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.5-pro",
+            temperature=0,
+            google_api_key=api_key,
+        )
 
-        system_instruction = """
-        You are a highly intelligent spam classification expert. Your task is to classify a list of emails as either "spam" or "inbox" based on the user's personal and professional context.
+        # JSON 형식 오류 자동 수정 파서
+        retry_parser = RetryWithErrorFixingParser.from_llm(
+            parser=structured_parser,
+            llm=llm,
+        )
 
-        I will provide you with:
-        1.  **User Profile:** Their job, interests, and how they use the email account.
-        2.  **Emails:** A JSON array of emails, each with an ID, subject, and body.
-
-        **Classification Guidelines:**
-        -   **inbox:** Emails that are relevant to the user's job, studies, stated interests, or appear to be important personal or professional communication.
-        -   **spam:** Unsolicited promotional emails, scams, newsletters the user didn't subscribe to, or content completely irrelevant to their profile.
-
-        **Output Format:**
-        Your response MUST be a single, valid JSON object. The keys must be the string email IDs, and the values must be the classification string: "spam" or "inbox".
-
-        **Example:**
-        -   **Input (in user prompt):**
-            User Profile:
-            - Job: "Software Engineer"
-            - Interests: ["Python", "Django"]
-            - Usage: "Work"
-            Emails:
-            [{"id": "101", "subject": "New Python library released!", "body": "..."}, {"id": "102", "subject": "Buy cheap watches", "body": "..."}]
-        -   **Your Output:**
-            {
-              "101": "inbox",
-              "102": "spam"
-            }
-
-        Do not output any other text, explanations, or markdown formatting. Just the JSON object.
-        """
-        # 1. 청크 단위 줄이기 2. 스팸에 대한 정의가 모호하다. 오히려 JSON 포맷으로 가능한 토픽 20개 정도 주루룩 늘여놓고 마지막에 이것도 다 아니면 스팸메일로 처리. 이 카테고리 중 하나로 분류해줘.
-        # 그리고 매 메일마다 iteration 돌리기. 기존에 spam으로 된거 유지하는 것도 괜찮아보이는데.
+        chain = LLMChain(
+            llm=llm,
+            prompt=spam_filter_prompt,
+            output_parser=retry_parser,  # 🚀 자동 복구 파서 연결
+            output_key="classification",
+        )
 
         # LLM 프롬프트에 포함시키기 위해 이메일 리스트를 JSON 문자열로 변환
         emails_json_string = json.dumps(emails, indent=2, ensure_ascii=False)
 
-        user_prompt = f"""
-        **User Profile:**
-        - Job: {job}
-        - Interests: {interests}
-        - Usage: {usage}
+        result = chain.invoke(
+            {
+                "job": job,
+                "interests": ", ".join(interests),
+                "usage": usage,
+                "emails": emails_json_string,
+            }
+        )
 
-        **Emails to Classify:**
-        {emails_json_string}
-        """
-
-        config = types.GenerateContentConfig(system_instruction=system_instruction)
-        response = client.models.generate_content(model="gemini-2.5-pro", config=config, contents=user_prompt)
-
-        # LLM의 응답에서 JSON 부분만 추출
-        cleaned_response = response.text.strip().replace("```json", "").replace("```", "").strip()
-
-        # JSON 응답을 파싱하여 딕셔너리로 변환
-        classification_results = json.loads(cleaned_response)
+        # 결과에서 분류 결과 추출
+        classification_results = result.get("classification", {})
         return classification_results
-
     except Exception as e:
-        print(f"An error occurred during the batch classification API call: {e}")
+        print(f"Error during email classification: {e}")
         return {}
-
-
-# 스팸메일 처리 로직 피드백.
-# 정확도로 하려면 있는 태그들 중 하나를 골라서 집어넣어달라고 지시를 주면 그게 좋을 것 같다.
-# 개별 메일 단위로 iteration하고 검증용 요청도 하나 보내놓는 거 좋아보임.
