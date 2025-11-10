@@ -15,4 +15,13 @@ dependencies = [
     "setuptools==78.1.1",
     "sqlparse==0.5.3",
     "wheel==0.45.1",
+    "annotated-types>=0.7.0",
+    "anyio>=4.11.0",
+    "google-genai>=1.46.0",
+    "google-auth>=2.41.1",
+    "graphviz>=0.21",
+    "django-extensions>=4.1",
+    "pre-commit>=4.3.0",
+    "python-jose>=3.5.0",
+    "boto3>=1.40.59",
 ]

@@ -1,148 +1,118 @@
 # mailer_back
 
-## 백엔드를 위한 가이드
+## 프론트엔드 개발자를 위한 빠른 테스트 가이드
 
-### 1. uv 설치
+이 가이드는 백엔드 프로젝트를 처음 실행하는 프론트엔드 개발자를 위해 작성되었습니다. 아래 단계만 따라 하면 바로 테스트 가능한 서버를 실행할 수 있습니다.
 
-uv 설치법
-curl -LsSf https://astral.sh/uv/install.sh | sh # uv 설치
-<br>
-source $HOME/.cargo/env #환경변수 설정
-
-가상환경 생성 및 활성화
-uv venv
-source .venv/bin/activate
-
-uv sync
-
-이후 패키지 추가 필요 시
-uv add 패키지명
+### 사전 준비
+-   Python 3.10 이상 버전이 설치되어 있어야 합니다.
 
 ---
 
-### 2. 프로젝트 환경 설정 (Initial Setup)
+### 1단계: 프로젝트 클론
 
-이 프로젝트를 실행하려면 보안을 위한 환경 변수 설정이 필요합니다. 프로젝트 루트에 있는 `.env.example` 파일을 복사하여 `.env` 파일을 만드세요.
+```bash
+git clone <repository_url>
+cd mailer_back
+```
+
+### 2단계: Python 가상 환경 생성 및 활성화
+
+프로젝트의 의존성을 시스템과 격리하기 위해 가상 환경을 사용합니다.
+
+**macOS / Linux:**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+**Windows:**
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+```
+이제 터미널 프롬프트 앞에 `(.venv)`가 표시됩니다.
+
+### 3단계: 의존성 패키지 설치
+
+`pip`를 사용하여 필요한 모든 패키지를 설치합니다.
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4단계: `.env` 파일 설정
+
+API 키 등 민감한 정보를 설정합니다. `.env.example` 파일을 복사하여 `.env` 파일을 만드세요.
 
 ```bash
 cp .env.example .env
 ```
 
-그런 다음, 아래의 명령어를 사용하여 `SECRET_KEY`와 `FERNET_KEY`를 생성하고, 생성된 키를 `.env` 파일에 각각 붙여넣으세요.
+그 다음, 생성된 `.env` 파일을 열어 아래 항목들을 채워주세요.
 
-#### 1. SECRET_KEY 생성
-
-Django에서 사용하는 비밀 키입니다. 아래 명령어를 실행하여 키를 생성하세요.
-
-```bash
-.venv/bin/python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
-```
-
-#### 2. FERNET_KEY 생성
-
-이메일 계정의 비밀번호를 암호화하는 데 사용되는 키입니다. 아래 명령어를 실행하여 키를 생성하세요.
-
-```bash
-.venv/bin/python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
-```
-
-#### .env 파일 예시
-
-위에서 생성된 키들을 `.env` 파일에 아래와 같은 형식으로 저장해야 합니다.
-
-```
-SECRET_KEY=your_generated_secret_key_here
-FERNET_KEY=your_generated_fernet_key_here
-```
-
----
-
-### 3. pre-commit 설정 활성화
-
-아래의 코드를 실행하면 pre-commit 설정이 활성화 됩니다. 저희는 린터/포매터로 ruff와 black을 사용중입니다.
-
-```bash
-pip install pre-commit
-pre-commit install
-```
-
-## 🚀 프론트엔드를 위한 가이드
-
-이 문서는 Mailer 프로젝트의 백엔드 설정을 위한 가이드입니다.
-
-### 1단계: `uv` 설치
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-source $HOME/.cargo/env
-```
-
-### 2단계: 가상 환경 생성 및 활성화
-
-프로젝트 루트 디렉토리에서 아래 명령어를 실행하여 가상 환경을 만들고 활성화합니다.
-
-```bash
-uv venv
-source .venv/bin/activate
-```
-
-### 3단계: 의존성 패키지 설치
-
-`uv.lock` 파일에 명시된 모든 의존성 패키지를 설치합니다.
-
-```bash
-uv sync
-```
-
-### 4단계: 환경 변수 설정(로컬 테스트용)
-
-보안 키들을 담고 있는 `.env` 파일을 설정합니다.
-
-1.  먼저, `.env.example` 파일을 복사하여 `.env` 파일을 생성합니다.
-
-2.  아래 명령어를 실행하여 `SECRET_KEY`와 `FERNET_KEY`를 각각 생성합니다.
-
-    - **SECRET_KEY 생성:**
-      ```bash
-      .venv/bin/python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
-      ```
-    - **FERNET_KEY 생성:**
-      ```bash
-      .venv/bin/python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
-      ```
-
-3.  생성된 두 개의 키를 복사하여 `.env` 파일 안에 각각 붙여넣습니다.
-    ```
-    SECRET_KEY=your_generated_secret_key_here
-    FERNET_KEY=your_generated_fernet_key_here
+1.  **`FERNET_KEY`**: 이메일 비밀번호 암호화 키입니다. 아래 명령어로 생성하여 붙여넣으세요.
+    ```bash
+    python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     ```
 
-### 6단계: 데이터베이스 설정
+2.  **`SECRET_KEY`**: Django 보안 키입니다. 아래 명령어로 생성하여 붙여넣으세요.
+    ```bash
+    python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+    ```
 
-아래 명령어를 실행하여 데이터베이스 테이블을 생성하고 초기화합니다.
+3.  **`EMAIL_ADDRESS` / `EMAIL_PASSWORD`**: 이메일 동기화 테스트를 위해 실제 사용하는 **Gmail 계정** 정보를 입력해주세요. (앱 비밀번호 사용 권장)
+(앱 비밀번호 생성: https://myaccount.google.com/apppasswords?rapt=AEjHL4N99hr0cASdIjZb5gvzt9EriTkYp3s0oR_KCneUuvaG59FRY8obQKYdF3arhu1JS9Zqt2OzElEeOkey5C5NIsinpWfSPi-Djyv-70uRd0etuoOMAY4)
 
-```bash
-.venv/bin/python manage.py migrate
+4.  **`GOOGLE_API_KEY`**: 스팸 필터링 기능을 위해 필요합니다. [Google AI Studio](https://aistudio.google.com/app/apikey)에서 빠르게 발급받을 수 있습니다. (없어도 서버 실행은 가능)
+
+5.  **`CLERK_TURN_OFF` / `S3_TURN_OFF`**: **반드시 `True`로 설정해주세요.** Clerk 인증 및 S3 파일 업로드를 비활성화하여 로컬 환경에서 쉽게 API를 테스트할 수 있습니다.
+    ```env
+    CLERK_TURN_OFF=True
+    S3_TURN_OFF=True
+    ```
+
+완성된 `.env` 파일은 아래와 같은 모습입니다.
+```env
+#이메일 암호화용 FERNET 키
+FERNET_KEY=91v24r'80kp'1v24r80k-
+
+#장고 내에서 사용하는 SECRET_KEY
+SECRET_KEY=1k9184tv1v24rk980-
+
+#스팸 필터 호출용 LLM_API_KEY
+GOOGLE_API_KEY="API 키"
+
+#이메일 불러오기 위한 계정정보
+EMAIL_ADDRESS="test@test.com"
+EMAIL_PASSWORD="xxxx xxxx xxxx xxxx" (16자)
+
+# Clerk 인증 비활성화
+CLERK_TURN_OFF=True
+
+# S3 업로드 비활성화
+S3_TURN_OFF=True
 ```
 
-### 6-1 : 더미데이터 세팅
+### 5단계: 데이터베이스 및 테스트 데이터 생성
+
+아래 두 명령어를 순서대로 실행하여 데이터베이스를 만들고, API 테스트에 필요한 기본 사용자(`testuser`)와 이메일 계정을 생성합니다.
 
 ```bash
-python manage.py seed_test_data
+python manage.py migrate
+python test_setup.py
 ```
 
-테스트용 계정:
-username='testuser',
-defaults={'password': 'testpassword123'}
-생성 및 3개의 test email 연결.
-각 email당 20개의 테스트 메일, 총 60개 메일을 랜덤한 folder에 저장.
+### 6단계: 개발 서버 실행
 
-### 7단계: 개발 서버 실행
-
-모든 설정이 완료되었으면, 아래 명령어를 사용하여 개발 서버를 실행합니다.
+모든 준비가 끝났습니다! 아래 명령어로 서버를 실행하세요.
 
 ```bash
-.venv/bin/python manage.py runserver
+python manage.py runserver
 ```
 
-서버가 정상적으로 실행되면, 웹 브라우저에서 `http://127.0.0.1:8000/api/swagger` 주소로 접속할 수 있습니다.
+### 7단계: API 테스트
+
+-   서버가 `http://127.0.0.1:8000/` 에서 실행됩니다.
+-   모든 API 엔드포인트 문서는 **`http://127.0.0.1:8000/api/swagger/`** 에서 확인할 수 있습니다.
+-   `CLERK_TURN_OFF=True`이므로, 모든 API 요청은 자동으로 `testuser`로 인증됩니다. 별도의 인증 헤더 없이 바로 API를 테스트할 수 있습니다.
