@@ -27,7 +27,7 @@ class EmailMetadata(models.Model):
     is_pinned = models.BooleanField(default=False, help_text="상단 고정 여부")
     is_read = models.BooleanField(default=False, help_text="읽음 상태 여부")
     is_summarized = models.BooleanField(default=False, help_text="요약 여부")
-    is_spammed = models.BooleanField(default=False, help_text="스팸 메일 여부")
+    is_spammed = models.BooleanField(blank=True, null=True, help_text="스팸 메일 여부")
     summarized_content = models.TextField(null=True, blank=True)
     received_at = models.DateTimeField()
     synced_at = models.DateTimeField(auto_now=True)
