@@ -33,8 +33,7 @@ prompt_text = """
 
   ### Output Requirements
   - Respond with a **single valid JSON object only**.
-  - **Keys**: each email's `"id"` (string)
-  - **Values**: `"spam"` or `"inbox"`
+  - Structure: {"<email_id>": "spam" | "inbox", ...}
   - No extra text, comments, markdown, or explanations.
 
   Example:
@@ -53,7 +52,7 @@ prompt_text = """
 
   Your Output:
   {{
-    "101": "inbox",
+    "101": "inbox", 
     "102": "spam"
   }}
 

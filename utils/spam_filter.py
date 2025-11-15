@@ -14,7 +14,7 @@ from langgraph.graph import StateGraph, END
 
 # utils/spam_schemas.py
 from typing import Literal
-from pydantic import BaseModel, Field
+from pydantic import RootModel
 
 # 스팸메일 처리 로직 피드백.
 # 정확도로 하려면 있는 태그들 중 하나를 골라서 집어넣어달라고 지시를 주면 그게 좋을 것 같다.
@@ -33,12 +33,10 @@ class SpamState(TypedDict, total=False):
 
 
 # -------------------- Pydantic Structured Schema --------------------
-class ClassificationResult(BaseModel):
-    """email_id -> 'spam' | 'inbox'"""
+class ClassificationMap(RootModel[Dict[str, Literal["spam", "inbox"]]]):
+    """Root-level mapping: { email_id: 'spam' | 'inbox' } (no wrapper key)."""
 
-    classification: Dict[str, Literal["spam", "inbox"]] = Field(
-        ..., description="Mapping from email id (string) to label ('spam' or 'inbox')."
-    )
+    pass
 
 
 # -------------------- classify_node --------------------
@@ -51,10 +49,10 @@ def classify_node(state: SpamState) -> SpamState:
     classify_prompt = PromptTemplate.from_template(prompt_text)
 
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash-exp",  # flash 모델은 더 빠르고 quota가 넉넉함
+        model="gemini-2.0-flash",  # flash 모델은 더 빠르고 quota가 넉넉함
         temperature=0,
         google_api_key=api_key,
-    ).with_structured_output(ClassificationResult)
+    ).with_structured_output(ClassificationMap)
 
     chain = classify_prompt | llm
 
@@ -68,7 +66,8 @@ def classify_node(state: SpamState) -> SpamState:
                 "emails": emails_json,
             }
         )
-        return {"result": output.classification}
+        # output is ClassificationMap (RootModel) -> .root contains the mapping
+        return {"result": getattr(output, "root", output)}
     except ValidationError as ve:
         return {"error": f"ValidationError: {ve}"}
     except Exception as e:
@@ -84,7 +83,7 @@ def repair_node(state: SpamState) -> SpamState:
         return {"error": "GOOGLE_API_KEY not found"}
 
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash-exp",  # flash 모델은 더 빠르고 quota가 넉넉함
+        model="gemini-2.0-flash",  # flash 모델은 더 빠르고 quota가 넉넉함
         temperature=0,
         google_api_key=api_key,
     )

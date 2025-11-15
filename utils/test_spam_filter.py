@@ -24,27 +24,27 @@ def test_classify_emails_in_batch():
     # 테스트용 샘플 이메일 데이터
     sample_emails = [
         {
-            "id": "email_001",
+            "id": "1",
             "subject": "Congratulations! You won $1,000,000!",
             "body": "Click here to claim your prize now! Limited time offer. Act fast!",
         },
         {
-            "id": "email_002",
+            "id": "2",
             "subject": "Project Update - Q4 Roadmap",
             "body": "Hi team, attached is the Q4 roadmap document. Please review and share your feedback by Friday.",
         },
         {
-            "id": "email_003",
+            "id": "3",
             "subject": "RE: Python Django Best Practices",
             "body": "Thanks for the article! I found the section on middleware really helpful. Let's discuss this in our next code review.",
         },
         {
-            "id": "email_004",
+            "id": "4",
             "subject": "URGENT: Your account will be suspended",
             "body": "Your account has suspicious activity. Click this link immediately to verify your identity or your account will be deleted.",
         },
         {
-            "id": "email_005",
+            "id": "5",
             "subject": "Weekly Newsletter: AI and Machine Learning",
             "body": "This week's top stories: New breakthrough in LLM efficiency, practical guide to fine-tuning, and upcoming conferences.",
         },
