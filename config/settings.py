@@ -203,3 +203,30 @@ if CLERK_TURN_OFF:
 if S3_TURN_OFF:
     # 2. 파일 저장을 S3 대신 로컬 파일 시스템으로 변경
     DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+
+# Celery Settings
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
+CELERY_TIMEZONE = "Asia/Seoul"
+CELERY_ENABLE_UTC = False
+
+# 주기적 작업 스케줄(Celery Beat)
+
+CELERY_BEAT_SCHEDULE = {
+    # 30초마다 스팸 분류 시도
+    "classify-unprocessed-email-metadata": {
+        "task": "email_metadata.tasks.classify_unprocessed_metadata",
+        "schedule": 30.0,  # seconds
+        "kwargs": {"batch_size": 30, "sleep": 1.0},
+    },
+    # 2분마다 큐 상태 로깅
+    "log-spam-queue-depth": {
+        "task": "email_metadata.tasks.log_spam_queue_depth",
+        "schedule": 120.0,
+    },
+}
