@@ -141,7 +141,7 @@ class EmailSyncView(APIView):
                 value={
                     "id": 2,
                     "address": "new_user@gmail.com",
-                    "domain": "imap.gmail.com",
+                    "domain": "gmail",
                     "is_valid": True,
                     "last_synced": None,
                 },

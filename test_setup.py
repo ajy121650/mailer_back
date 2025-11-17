@@ -1,9 +1,13 @@
 import os
 import django
 from dotenv import load_dotenv
+
+#### 실제로 사용 시 아래 3개의 위치를 'End Django Setup' 아래 위치로 바꿔주세요. ####
 from user.models import User
 from email_account.models import EmailAccount
-from email_content.utils import get_imap_config
+
+################################################
+
 
 # --- Django Setup ---
 # PWD: /home/dongi/mailer_back
@@ -12,6 +16,11 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 # Setup Django
 django.setup()
 # --- End Django Setup ---
+
+####### 여기에 임포트 3개 놓고 사용! ########
+
+
+##########################################
 
 
 def main():
@@ -50,8 +59,6 @@ def main():
         # 'user@gmail.com' -> 'gmail.com' -> 'gmail'
         full_domain = email_address.split("@")[1]
         simple_domain = full_domain.split(".")[0].lower()
-        imap_config = get_imap_config(simple_domain)
-        imap_host = imap_config["host"]
     except (IndexError, AttributeError):
         print(f"오류: 유효하지 않은 이메일 주소 형식입니다: {email_address}")
         return
@@ -64,7 +71,7 @@ def main():
         address=email_address,
         defaults={
             "user": user,
-            "domain": imap_host,  # 올바른 IMAP 호스트 주소 사용
+            "domain": simple_domain,
             "is_valid": True,
             "job": "컴퓨터 공학과 학생",
             "usage": "공부용",
