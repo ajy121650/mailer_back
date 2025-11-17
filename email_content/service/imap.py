@@ -6,7 +6,6 @@ from email_attachment.models import Attachment
 from email_metadata.models import EmailMetadata
 from email_content.utils import get_imap_config
 import uuid
-import boto3
 import email.utils
 
 ########## API 테스트를 위해 추가한 import ##########
@@ -19,25 +18,31 @@ import os
 from utils.spam_filter import classify_emails_in_batch
 
 
-def upload_to_s3(file_bytes, prefix, ext):
-    ########### API 테스트를 위해서 추가한 함수. ###########
-    # API_TEST_MODE에 따라 S3 또는 로컬에 파일을 저장.
-    if settings.API_TEST_MODE:
-        # 테스트 모드: 로컬 파일 시스템에 저장
-        storage_dir = os.path.join(settings.BASE_DIR, "local_attachments", prefix)
-        os.makedirs(storage_dir, exist_ok=True)
-        file_name = f"{uuid.uuid4()}.{ext}"
-        file_path = os.path.join(storage_dir, file_name)
-        with open(file_path, "wb") as f:
-            f.write(file_bytes)
-        return file_path  # 로컬 파일 경로 반환
-    else:
-        #####################################################
-        s3 = boto3.client("s3")
-        BUCKET_NAME = "my-mailbox-storage"
-        file_key = f"{prefix}/{uuid.uuid4()}.{ext}"
-        s3.put_object(Bucket=BUCKET_NAME, Key=file_key, Body=file_bytes)
-        return f"s3://{BUCKET_NAME}/{file_key}"
+def save_attachment_locally(file_bytes, original_filename):
+    """
+    첨부파일을 로컬 파일 시스템에 저장하고, DB에 기록할 상대 경로를 반환합니다.
+    """
+    # 파일 확장자 추출, 없으면 'bin' 사용
+    try:
+        ext = original_filename.split(".")[-1] if "." in original_filename else "bin"
+    except Exception:
+        ext = "bin"
+
+    # 저장 경로 설정 (루트/EmailAttachments/)
+    storage_dir = os.path.join(settings.BASE_DIR, "EmailAttachments")
+    os.makedirs(storage_dir, exist_ok=True)
+
+    # 고유한 파일명 생성 및 전체 경로 조합
+    file_name = f"{uuid.uuid4()}.{ext}"
+    relative_path = os.path.join("EmailAttachments", file_name)
+    full_path = os.path.join(settings.BASE_DIR, relative_path)
+
+    # 파일 저장
+    with open(full_path, "wb") as f:
+        f.write(file_bytes)
+
+    # DB에 저장할 상대 경로 반환
+    return relative_path
 
 
 def parse_addresses(header):
@@ -220,14 +225,22 @@ def fetch_and_store_emails(address):
 
         # 7. 첨부파일 저장
         for att_data in email_data["attachments_data"]:
-            file_bytes = att_data["bytes"]
-            s3_path = upload_to_s3(file_bytes, prefix="attachments", ext="bin")
+            file_bytes = att_data.get("bytes")
+            original_filename = att_data.get("filename")
+
+            if not file_bytes or not original_filename:
+                continue
+
+            # 파일을 로컬에 저장하고 상대 경로를 받음
+            local_path = save_attachment_locally(file_bytes, original_filename)
+
+            # Attachment 모델 필드에 맞게 데이터 저장
             Attachment.objects.create(
                 email=email_obj,
-                filename=att_data["filename"],
-                content_type=att_data["content_type"],
-                size=len(file_bytes),
-                s3_path=s3_path,
+                file_name=original_filename,
+                mime_type=att_data.get("content_type"),
+                file_size=len(file_bytes),
+                file_path=local_path,
             )
     #### END: 분류 결과와 함께 DB에 저장하는 단계 ####
 

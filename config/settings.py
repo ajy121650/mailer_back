@@ -25,9 +25,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Clerk 사용 안함 환경변수 (테스트용)
 CLERK_TURN_OFF = os.environ.get("CLERK_TURN_OFF") == "True"
 
-# S3 사용 안함 환경변수 (테스트용)
-S3_TURN_OFF = os.environ.get("S3_TURN_OFF") == "True"
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -199,7 +196,3 @@ if CLERK_TURN_OFF:
     REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = [
         "user.auth.TestAuthentication",
     ]
-
-if S3_TURN_OFF:
-    # 2. 파일 저장을 S3 대신 로컬 파일 시스템으로 변경
-    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
