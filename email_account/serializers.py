@@ -58,7 +58,7 @@ class EmailAccountCreateSerializer(serializers.ModelSerializer):
                 imap.logout()
 
             # 검증 성공 시, create 메소드에서 사용할 수 있도록 imap_host를 data에 추가
-            data["imap_host"] = imap_host
+            data["domain"] = simple_domain
             return data
 
         except (IndexError, AttributeError):
@@ -74,13 +74,13 @@ class EmailAccountCreateSerializer(serializers.ModelSerializer):
         user = self.context["request"].user
         address = validated_data.get("address")
         password = validated_data.pop("password")
-        imap_host = validated_data.get("imap_host")  # validate에서 추가된 호스트 정보
+        domain = validated_data.get("domain")  # validate에서 추가된 도메인 정보
 
         if EmailAccount.objects.filter(user=user, address=address).exists():
             raise serializers.ValidationError({"detail": "This email account is already registered."})
 
         # validate에서 이미 검증되었으므로 바로 인스턴스 생성
-        instance = EmailAccount(user=user, address=address, domain=imap_host)
+        instance = EmailAccount(user=user, address=address, domain=domain)
         instance.email_password = password  # setter를 통해 비밀번호 암호화
         instance.save()
         return instance
