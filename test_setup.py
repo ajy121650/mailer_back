@@ -1,9 +1,9 @@
-from user.models import User
-from email_account.models import EmailAccount
-from dotenv import load_dotenv
 import os
 import django
-
+from dotenv import load_dotenv
+from user.models import User
+from email_account.models import EmailAccount
+from email_content.utils import get_imap_config
 
 # --- Django Setup ---
 # PWD: /home/dongi/mailer_back
@@ -46,16 +46,25 @@ def main():
         return
 
     # 2. EmailAccount 등록 (없으면 생성, 있으면 업데이트)
-    # 'user@gmail.com' -> 'gmail.com' -> 'gmail'
-    full_domain = email_address.split("@")[1]
-    domain_name = full_domain.split(".")[0]
+    try:
+        # 'user@gmail.com' -> 'gmail.com' -> 'gmail'
+        full_domain = email_address.split("@")[1]
+        simple_domain = full_domain.split(".")[0].lower()
+        imap_config = get_imap_config(simple_domain)
+        imap_host = imap_config["host"]
+    except (IndexError, AttributeError):
+        print(f"오류: 유효하지 않은 이메일 주소 형식입니다: {email_address}")
+        return
+    except ValueError as e:
+        print(f"오류: {e}")
+        return
 
     # update_or_create를 사용하여 사용자, 도메인 등 기본 정보를 업데이트/생성합니다.
     email_account, created = EmailAccount.objects.update_or_create(
         address=email_address,
         defaults={
             "user": user,
-            "domain": domain_name,  # 수정된 도메인 이름 사용
+            "domain": imap_host,  # 올바른 IMAP 호스트 주소 사용
             "is_valid": True,
             "job": "컴퓨터 공학과 학생",
             "usage": "공부용",
