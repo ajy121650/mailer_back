@@ -2,13 +2,6 @@ import os
 import django
 from dotenv import load_dotenv
 
-#### 실제로 사용 시 아래 3개의 위치를 'End Django Setup' 아래 위치로 바꿔주세요. ####
-from user.models import User
-from email_account.models import EmailAccount
-
-################################################
-
-
 # --- Django Setup ---
 # PWD: /home/dongi/mailer_back
 # Set the DJANGO_SETTINGS_MODULE environment variable
@@ -17,10 +10,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 # --- End Django Setup ---
 
-####### 여기에 임포트 3개 놓고 사용! ########
-
-
-##########################################
+# Django setup 후에 모델 임포트
+from user.models import User
+from email_account.models import EmailAccount
 
 
 def main():

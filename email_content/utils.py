@@ -18,6 +18,7 @@ def get_imap_config(domain: str):
         "yahoo": {"host": "imap.mail.yahoo.com", "port": 993, "ssl": True},
         "icloud": {"host": "imap.mail.me.com", "port": 993, "ssl": True},
         "aol": {"host": "imap.aol.com", "port": 993, "ssl": True},
+        "snu": {"host": "imap.gmail.com", "port": 993, "ssl": True},
     }
 
     if domain in table:

@@ -25,6 +25,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Clerk 사용 안함 환경변수 (테스트용)
 CLERK_TURN_OFF = os.environ.get("CLERK_TURN_OFF") == "True"
 
+# S3 사용 안함 환경변수 (테스트용)
+S3_TURN_OFF = os.environ.get("S3_TURN_OFF") == "True"
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -35,7 +38,23 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
+
+# CORS 설정
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
 
 
 # Application definition
@@ -51,6 +70,7 @@ INSTALLED_APPS = [
     "contact",
     # Third-party Apps
     "rest_framework",
+    "corsheaders",
     # drf 문서 자동생성용 앱
     "drf_spectacular",
     # Django Apps
@@ -65,6 +85,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -173,10 +194,10 @@ SPECTACULAR_SETTINGS = {
 }
 
 # Clerk 환경변수
-# CLERK_ISSUER는 Clerk 대시보드에서 복사
-CLERK_ISSUER = "https://<your-clerk-domain>"  # 예: https://example.clerk.accounts.dev
+# CLERK_ISSUER는 Clerk 대시보드에서 복사 (예: https://your-app.clerk.accounts.dev)
+CLERK_ISSUER = os.environ.get("CLERK_ISSUER", "https://exotic-donkey-26.clerk.accounts.dev")
 CLERK_JWKS_URL = f"{CLERK_ISSUER}/.well-known/jwks.json"
-CLERK_AUDIENCE = None  # Session Token 쓰면 보통 None. JWT Template 쓰면 "my-backend" 등으로 세팅
+CLERK_AUDIENCE = os.environ.get("CLERK_AUDIENCE")  # Session Token 쓰면 보통 None. JWT Template 쓰면 "my-backend" 등으로 세팅
 
 # SMTP 기본 발신자 이메일 주소
 DEFAULT_FROM_EMAIL = os.getenv("SMTP_DEFAULT_SENDER", "no-reply@example.com")
@@ -186,9 +207,9 @@ CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"
 
 
 # ####################################################################
-# API TEST MODE (Clerk 비활성화)
+# API TEST MODE (Clerk/S3 비활성화)
 # ####################################################################
-# 사용법: .env 파일에 CLERK_TURN_OFF=True 설정
+# 사용법: .env 파일에 API_TEST_MODE=True 설정
 # 프로덕션 전환 시: 이 블록 전체를 삭제하거나, .env 파일의 값을 False로 바꾸세요.
 # ####################################################################
 if CLERK_TURN_OFF:
@@ -196,9 +217,10 @@ if CLERK_TURN_OFF:
     REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = [
         "user.auth.TestAuthentication",
     ]
-    
-#######################################################################
-    
+
+if S3_TURN_OFF:
+    # 2. 파일 저장을 S3 대신 로컬 파일 시스템으로 변경
+    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
 
 # Celery Settings
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
