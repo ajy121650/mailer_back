@@ -38,22 +38,9 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = []
 
-# CORS 설정
 CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = [
-    "accept",
-    "accept-encoding",
-    "authorization",
-    "content-type",
-    "dnt",
-    "origin",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
-]
 
 
 
@@ -191,6 +178,17 @@ SPECTACULAR_SETTINGS = {
     "AUTH_SCHEMA_EXTENSIONS": {
         "test_auth": "user.auth.TestAuthenticationScheme",
     },
+    # API 그룹화를 위한 경로 접두사 지정
+    "SCHEMA_PATH_PREFIX": r"/api",
+    # 각 앱(태그)에 대한 설명 추가
+    "TAGS": [
+        {"name": "user", "description": "사용자 인증 및 정보 관련 API"},
+        {"name": "account", "description": "이메일 계정 연동 및 관리 API"},
+        {"name": "email", "description": "통합 메일 조회, 관리 및 요약 API"},
+        {"name": "contact", "description": "주소록(즐겨찾기) 관리 API"},
+        {"name": "template", "description": "메일 템플릿 관련 API"},
+        {"name": "attachment", "description": "첨부파일 관련 API"},
+    ],
 }
 
 # Clerk 환경변수
@@ -218,9 +216,8 @@ if CLERK_TURN_OFF:
         "user.auth.TestAuthentication",
     ]
 
-if S3_TURN_OFF:
-    # 2. 파일 저장을 S3 대신 로컬 파일 시스템으로 변경
-    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+#######################################################################
+
 
 # Celery Settings
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")

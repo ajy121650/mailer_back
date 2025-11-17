@@ -232,6 +232,7 @@ class EmailUpdateView(generics.RetrieveUpdateDestroyAPIView):
 # ----------------------------------------------------------------
 class EmailSummarizeView(APIView):
     permission_classes = [TestPermission]
+    serializer_class = EmailSummarySerializer
     resummarize = False  # Default value, will be overridden by as_view()
 
     @extend_schema(
