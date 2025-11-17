@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status, generics
 from .models import EmailAccount
-from email_content.proto import fetch_and_store_emails
+from email_content.service.imap import fetch_and_store_emails
 
 ####### 이메일 계정 연동 관련 임포트 #########
 from .serializers import (
