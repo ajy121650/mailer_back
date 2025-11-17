@@ -24,4 +24,11 @@ dependencies = [
     "pre-commit>=4.3.0",
     "python-jose>=3.5.0",
     "boto3>=1.40.59",
+    "langchain>=1.0.5",
+    "langchain-core>=1.0.4",
+    "langchain-community>=0.4.1",
+    "langchain-google-genai>=3.0.1",
+    "langgraph>=1.0.2",
+    "celery>=5.5.3",
+    "redis>=7.0.1",
 ]

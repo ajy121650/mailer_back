@@ -6,6 +6,10 @@
 db.sqlite3
 *.log
 
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
 # Python
 __pycache__/
 *.pyc

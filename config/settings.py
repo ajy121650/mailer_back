@@ -186,9 +186,9 @@ CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"
 
 
 # ####################################################################
-# API TEST MODE (Clerk/S3 비활성화)
+# API TEST MODE (Clerk 비활성화)
 # ####################################################################
-# 사용법: .env 파일에 API_TEST_MODE=True 설정
+# 사용법: .env 파일에 CLERK_TURN_OFF=True 설정
 # 프로덕션 전환 시: 이 블록 전체를 삭제하거나, .env 파일의 값을 False로 바꾸세요.
 # ####################################################################
 if CLERK_TURN_OFF:
@@ -196,3 +196,33 @@ if CLERK_TURN_OFF:
     REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = [
         "user.auth.TestAuthentication",
     ]
+    
+#######################################################################
+    
+
+# Celery Settings
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
+CELERY_TIMEZONE = "Asia/Seoul"
+CELERY_ENABLE_UTC = False
+
+# 주기적 작업 스케줄(Celery Beat)
+
+CELERY_BEAT_SCHEDULE = {
+    # 30초마다 스팸 분류 시도
+    "classify-unprocessed-email-metadata": {
+        "task": "email_metadata.tasks.classify_unprocessed_metadata",
+        "schedule": 30.0,  # seconds
+        "kwargs": {"batch_size": 30, "sleep": 1.0},
+    },
+    # 2분마다 큐 상태 로깅
+    "log-spam-queue-depth": {
+        "task": "email_metadata.tasks.log_spam_queue_depth",
+        "schedule": 120.0,
+    },
+}
