@@ -228,8 +228,16 @@ def fetch_and_store_emails(address):
             file_bytes = att_data.get("bytes")
             original_filename = att_data.get("filename")
 
-            if not file_bytes or not original_filename:
+            # 파일 내용이 없으면 건너뜀
+            if not file_bytes:
                 continue
+
+            # 파일명이 없으면 이메일 제목을 기반으로 대체 파일명 생성
+            if not original_filename:
+                subject_base = email_data.get("subject", "unnamed")
+                # 파일명으로 사용하기 안전한 문자만 남김
+                safe_subject = "".join(c for c in subject_base if c.isalnum() or c in (" ", "_")).rstrip()
+                original_filename = f"{safe_subject}_attachment" if safe_subject else "unnamed_attachment"
 
             # 파일을 로컬에 저장하고 상대 경로를 받음
             local_path = save_attachment_locally(file_bytes, original_filename)
