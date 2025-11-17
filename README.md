@@ -116,3 +116,52 @@ python manage.py runserver
 -   서버가 `http://127.0.0.1:8000/` 에서 실행됩니다.
 -   모든 API 엔드포인트 문서는 **`http://127.0.0.1:8000/api/swagger/`** 에서 확인할 수 있습니다.
 -   `CLERK_TURN_OFF=True`이므로, 모든 API 요청은 자동으로 `testuser`로 인증됩니다. 별도의 인증 헤더 없이 바로 API를 테스트할 수 있습니다.
+
+### 8단계: 백그라운드 스팸 분류(Celery 실행)
+
+이 프로젝트는 이메일 메타데이터(`EmailMetadata.is_spammed == NULL`)를 주기적으로 LLM을 통해 스팸/정상으로 분류합니다.
+
+1. Redis 실행 (Mac Homebrew 예시)
+```bash
+brew services start redis
+```
+    또는 직접 실행:
+```bash
+redis-server
+```
+
+2. Celery 워커 실행
+```bash
+celery -A config.celery.app worker -l info --queues default
+```
+
+3. Celery Beat 실행 (주기적 작업 스케줄러)
+```bash
+celery -A config.celery.app beat -l info
+```
+
+4. (선택) 워커+비트를 하나의 프로세스로 실행 (개발 간편 버전)
+```bash
+celery -A config.celery.app worker -l info --beat
+```
+
+주요 작업:
+- `classify-unprocessed-email-metadata`: 30초마다 최대 30개 미분류 메타데이터 그룹을 스팸 분류
+- `log-spam-queue-depth`: 2분마다 미분류 개수 로깅
+
+환경변수 (`.env`) 예시:
+```env
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
+```
+
+분류 결과는 `EmailMetadata.is_spammed` (True/False) 및 `folder` (spam/inbox) 필드로 저장됩니다.
+
+#### 트러블슈팅
+| 증상 | 원인 | 해결 |
+|------|------|------|
+| 워커가 아무 것도 처리 안 함 | 대상 row 없음 | EmailMetadata에 is_spammed NULL 상태 row 생성 후 대기 |
+| Redis 연결 오류 | Redis 미실행 | `redis-server` 혹은 Homebrew 서비스 실행 |
+| LLM API 오류 다수 | 네트워크/쿼터 문제 | GOOGLE_API_KEY 확인, 호출 빈도 조절(rate_limit) |
+| 중복 처리 | 다중 워커 경합 | 현재 단일 워커 권장 혹은 DB 잠금 필드 추가 고려 |
+
