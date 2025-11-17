@@ -1,5 +1,6 @@
 import imaplib
 import email
+from email.header import decode_header, make_header
 from email_content.models import EmailContent
 from email_account.models import EmailAccount
 from email_attachment.models import Attachment
@@ -110,8 +111,10 @@ def fetch_and_store_emails(address):
             if EmailMetadata.objects.filter(account=account, email__message_id=message_id).exists():
                 continue
 
-        subject = msg.get("Subject", "")
-        from_header = msg.get("From", "")
+        # RFC 2047에 따라 인코딩된 헤더(제목, 발신자)를 디코딩
+        subject = str(make_header(decode_header(msg.get("Subject", ""))))
+        from_header = str(make_header(decode_header(msg.get("From", ""))))
+
         to_header = msg.get("To", "")
         cc_header = msg.get("Cc", "")
         bcc_header = msg.get("Bcc", "")

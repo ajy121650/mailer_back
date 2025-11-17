@@ -1,4 +1,5 @@
 # Create your views here.
+from drf_spectacular.utils import extend_schema
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
@@ -11,6 +12,12 @@ from email_account.models import EmailAccount
 
 
 class ViewTemplateListView(APIView):
+    @extend_schema(
+        summary="관리자 제공 템플릿 목록 조회",
+        description="관리자(is_admin=True)가 생성한 모든 템플릿의 목록을 조회합니다.",
+        responses=ViewTemplateSerializer(many=True),
+        operation_id="view_template_list",
+    )
     def get(self, request):
         try:
             admin = User.objects.filter(is_admin=True).first()
@@ -27,6 +34,12 @@ class ViewTemplateListView(APIView):
 
 
 class ViewTemplateDetailView(APIView):
+    @extend_schema(
+        summary="특정 템플릿 상세 조회",
+        description="ID로 특정 템플릿의 상세 내용을 조회합니다.",
+        responses=ViewTemplateSerializer,
+        operation_id="view_template_retrieve",
+    )
     def get(self, request, pk):
         try:
             template = Template.objects.get(pk=pk)
@@ -36,6 +49,12 @@ class ViewTemplateDetailView(APIView):
         serializer = ViewTemplateSerializer(template)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="내 템플릿으로 가져오기",
+        description="특정 템플릿을 지정된 사용자의 이메일 계정들로 복사하여 '내 템플릿'으로 저장합니다.",
+        request={"application/json": {"example": {"user_id": 1, "email_account_ids": [1, 2]}}},
+        responses={201: MyTemplateSerializer(many=True)},
+    )
     def post(self, request, pk):
         # Expect JSON body: { "user_id": int, "email_account_ids": [int, ...] }
         data = request.data if isinstance(request.data, dict) else {}
@@ -88,6 +107,9 @@ class ViewTemplateDetailView(APIView):
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(
+        summary="템플릿 삭제 (관리자용)", description="특정 템플릿을 영구적으로 삭제합니다.", responses={204: None}
+    )
     def delete(self, request, pk):
         try:
             template = Template.objects.get(pk=pk)
@@ -103,6 +125,11 @@ class ViewTemplateDetailView(APIView):
 
 
 class MyTemplateListView(APIView):
+    @extend_schema(
+        summary="내 템플릿 목록 조회",
+        description="특정 사용자가 소유한 모든 템플릿 목록을 조회합니다.",
+        responses=MyTemplateSerializer(many=True),
+    )
     def get(self, request, user_id):
         try:
             user = User.objects.get(id=user_id)
@@ -119,6 +146,12 @@ class MyTemplateListView(APIView):
 
 
 class MyTemplateCreateView(APIView):
+    @extend_schema(
+        summary="내 템플릿 생성",
+        description="새로운 개인 템플릿을 생성합니다.",
+        request=MyTemplateCreateRequestSerializer,
+        responses={201: MyTemplateSerializer},
+    )
     def post(self, request):
         user_id = request.query_params.get("user_id")
         email_account_id = request.query_params.get("email_account_id")
@@ -155,6 +188,11 @@ class MyTemplateCreateView(APIView):
 
 
 class MyTemplateDetailView(APIView):
+    @extend_schema(
+        summary="내 템플릿 상세 조회",
+        description="ID로 내가 소유한 특정 템플릿의 상세 내용을 조회합니다.",
+        responses=MyTemplateSerializer,
+    )
     def get(self, request, pk):
         try:
             template = Template.objects.get(pk=pk)
@@ -164,6 +202,12 @@ class MyTemplateDetailView(APIView):
         serializer = MyTemplateSerializer(template)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="내 템플릿 수정",
+        description="ID로 내가 소유한 특정 템플릿의 내용을 수정합니다.",
+        request=MyTemplateUpdateRequestSerializer,
+        responses={200: None},
+    )
     def put(self, request, pk):
         try:
             template = Template.objects.get(pk=pk)
@@ -186,6 +230,11 @@ class MyTemplateDetailView(APIView):
 
         return Response(status=status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="내 템플릿 삭제",
+        description="ID로 내가 소유한 특정 템플릿을 삭제합니다.",
+        responses={204: None},
+    )
     def delete(self, request, pk):
         try:
             template = Template.objects.get(pk=pk)
