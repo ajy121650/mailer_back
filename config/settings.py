@@ -35,7 +35,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["3.37.134.115", "localhost", "127.0.0.1", "api.mailmailermailest.site"]
 
 
 # Application definition
@@ -225,15 +225,15 @@ CELERY_ENABLE_UTC = False
 # 주기적 작업 스케줄(Celery Beat)
 
 CELERY_BEAT_SCHEDULE = {
-    # 30초마다 스팸 분류 시도
+    # 60초마다 스팸 분류 시도 (t2.micro 최적화)
     "classify-unprocessed-email-metadata": {
         "task": "email_metadata.tasks.classify_unprocessed_metadata",
-        "schedule": 30.0,  # seconds
-        "kwargs": {"batch_size": 30, "sleep": 1.0},
+        "schedule": 60.0,  # seconds (30→60 for t2.micro)
+        "kwargs": {"batch_size": 10, "sleep": 2.0},  # 배치 축소, 간격 증가
     },
-    # 2분마다 큐 상태 로깅
+    # 5분마다 큐 상태 로깅 (t2.micro 최적화)
     "log-spam-queue-depth": {
         "task": "email_metadata.tasks.log_spam_queue_depth",
-        "schedule": 120.0,
+        "schedule": 300.0,  # 120→300 for less frequent logging
     },
 }
