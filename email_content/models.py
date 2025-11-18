@@ -1,7 +1,6 @@
 from django.db import models
 
 
-# Create your models here.
 class EmailContent(models.Model):
     message_id = models.CharField(max_length=255, null=True, blank=True)
     gm_msgid = models.CharField(max_length=255, null=True, blank=True)
