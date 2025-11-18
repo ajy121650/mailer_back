@@ -39,6 +39,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 DEBUG = True
 
 ALLOWED_HOSTS = [
+    "3.37.134.115",
     "localhost",
     "127.0.0.1",
     "api.mailmailermailest.site",
