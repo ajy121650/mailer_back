@@ -22,6 +22,9 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
 # Clerk 사용 안함 환경변수 (테스트용)
 CLERK_TURN_OFF = os.environ.get("CLERK_TURN_OFF") == "True"
 
@@ -37,6 +40,51 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["3.37.134.115", "localhost", "127.0.0.1", "api.mailmailermailest.site"]
 
+# CORS 설정
+# CORS 설정
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "https://mailmailermailest.site",
+    "https://www.mailmailermailest.site",
+]
+
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
+# CSRF 설정
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://mailmailermailest.site",
+    "https://www.mailmailermailest.site",
+    "https://api.mailmailermailest.site",
+]
 
 # Application definition
 
