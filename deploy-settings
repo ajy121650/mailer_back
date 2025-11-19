@@ -1,0 +1,22 @@
+/etc/systemd/system/mailer-celery-worker.service
+
+[Unit]
+Description=Mailer Celery Worker
+After=network.target redis.service
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/mailer_back
+EnvironmentFile=/etc/systemd/system/mailer.env
+ExecStart=/home/ubuntu/mailer_back/venv_for_django/bin/celery -A config.celery:app worker -l info --queues=default --concurrency=1 --pool=solo --prefetch-multiplier=1 --max-tasks-per-child=10 --hostname=worker1@%h
+Restart=on-failure
+RestartSec=20
+TimeoutStopSec=60
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target
