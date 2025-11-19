@@ -20,3 +20,29 @@ KillMode=mixed
 
 [Install]
 WantedBy=multi-user.target
+
+/etc/systemd/system/mailer-classify.service
+[Unit]
+Description=Run classify_unprocessed_metadata task on demand
+After=network.target redis.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/mailer_back
+EnvironmentFile=/etc/systemd/system/mailer.env
+ExecStart=/home/ubuntu/mailer_back/venv_for_django/bin/celery -A config.celery:app call email_metadata.tasks.classify_unprocessed_metadata --kwargs '{"batch_size": 10, "sleep": 2.0}'
+
+
+
+/etc/systemd/system/mailer-classify.timer
+
+[Unit]
+Description=Run classify_unprocessed_metadata every 1 minute
+
+[Timer]
+OnBootSec=30
+OnUnitActiveSec=60
+
+[Install]
+WantedBy=timers.target
