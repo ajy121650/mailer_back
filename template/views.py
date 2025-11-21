@@ -14,13 +14,13 @@ from email_account.models import EmailAccount
 class ViewTemplateListView(APIView):
     @extend_schema(
         summary="관리자 제공 템플릿 목록 조회",
-        description="관리자(is_admin=True)가 생성한 모든 템플릿의 목록을 조회합니다.",
+        description="관리자(user_id='common_template_admin')가 생성한 모든 템플릿의 목록을 조회합니다.",
         responses=ViewTemplateSerializer(many=True),
         operation_id="view_template_list",
     )
     def get(self, request):
         try:
-            admin = User.objects.filter(is_admin=True).first()
+            admin = User.objects.filter(user_id="common_template_admin").first()
         except User.DoesNotExist:
             return Response({"error": "Admin user not found"}, status=status.HTTP_404_NOT_FOUND)
 

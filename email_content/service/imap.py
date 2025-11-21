@@ -45,10 +45,45 @@ def save_attachment_locally(file_bytes, original_filename):
     return relative_path
 
 
-def parse_addresses(header):
-    if not header:
+def decode_mime_header(header_string):
+    """MIME 인코딩된 이메일 헤더를 디코딩하여 단일 문자열로 반환합니다."""
+    if not header_string:
+        return ""
+    return str(make_header(decode_header(header_string)))
+
+
+def parse_addresses(header_string):
+    """
+    주소 헤더 문자열을 파싱하여, MIME 인코딩된 이름을 디코딩하고,
+    "이름 <주소>" 형식의 문자열 리스트로 반환합니다.
+    """
+    if not header_string:
         return []
-    return [addr.strip() for addr in header.split(",")]
+
+    addr_tuples = email.utils.getaddresses([header_string])
+    decoded_addrs = []
+
+    for name, addr in addr_tuples:
+        try:
+            decoded_name_parts = []
+            for part, charset in decode_header(name):
+                if isinstance(part, bytes):
+                    decoded_name_parts.append(part.decode(charset or "utf-8", "ignore"))
+                else:
+                    decoded_name_parts.append(part)
+            decoded_name = "".join(decoded_name_parts).strip()
+        except Exception:
+            decoded_name = name.strip()
+
+        # formataddr()의 재인코딩을 피하기 위해 수동으로 문자열 조합
+        if decoded_name and addr:
+            decoded_addrs.append(f"{decoded_name} <{addr}>")
+        elif addr:
+            decoded_addrs.append(addr)
+        elif decoded_name:
+            decoded_addrs.append(decoded_name)
+
+    return decoded_addrs
 
 
 def fetch_and_store_emails(address):
@@ -101,24 +136,23 @@ def fetch_and_store_emails(address):
             gm_msgid = msg.get("X-GM-MSGID")
 
         # 중복 스킵 로직 (EmailMetadata를 통해 계정별로 확인)
-        # 이메일이 이미 해당 계정에 대해 저장되었는지 확인
         if imap_host == "imap.gmail.com":
-            # Gmail은 gm_msgid를 사용해서 중복 체크
             if EmailMetadata.objects.filter(account=account, email__gm_msgid=gm_msgid).exists():
                 continue
         else:
-            # 그 외는 message_id로만 중복 체크
             if EmailMetadata.objects.filter(account=account, email__message_id=message_id).exists():
                 continue
 
-        # RFC 2047에 따라 인코딩된 헤더(제목, 발신자)를 디코딩
-        subject = str(make_header(decode_header(msg.get("Subject", ""))))
-        from_header = str(make_header(decode_header(msg.get("From", ""))))
-
-        to_header = msg.get("To", "")
-        cc_header = msg.get("Cc", "")
-        bcc_header = msg.get("Bcc", "")
+        # 헤더 디코딩
+        subject = decode_mime_header(msg.get("Subject", ""))
+        from_header = decode_mime_header(msg.get("From", ""))
         date = msg.get("Date", "")
+
+        # 주소 목록 파싱 및 디코딩
+        to_header_list = parse_addresses(msg.get("To", ""))
+        cc_header_list = parse_addresses(msg.get("Cc", ""))
+        bcc_header_list = parse_addresses(msg.get("Bcc", ""))
+
         # date 파싱
         try:
             parsed_date = email.utils.parsedate_to_datetime(date)
@@ -164,9 +198,9 @@ def fetch_and_store_emails(address):
                 "gm_msgid": gm_msgid,
                 "subject": subject,
                 "from_header": from_header,
-                "to_header": parse_addresses(to_header),
-                "cc_header": parse_addresses(cc_header),
-                "bcc_header": parse_addresses(bcc_header),
+                "to_header": to_header_list,
+                "cc_header": cc_header_list,
+                "bcc_header": bcc_header_list,
                 "text_body": text_body,
                 "html_body": html_body,
                 "has_attachment": has_attachment,
