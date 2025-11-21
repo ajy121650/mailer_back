@@ -100,7 +100,9 @@ S3_TURN_OFF=True
 
 ```bash
 python manage.py migrate
-python test_setup.py
+python ./test_setup/test_setup.py #테스트용 유저 생성 및 .env에 기록한 이메일 계정과 연동.
+python ./test_setup/inject_common_templates.py #공용 템플릿 생성.
+
 ```
 
 ### 6단계: 개발 서버 실행
