@@ -37,23 +37,26 @@ class EmailAccountCreateSerializer(serializers.ModelSerializer):
     def validate(self, data):
         address = data.get("address")
         password = data.get("password")
-
+        print(address, password)
         if not address or not password:
             raise serializers.ValidationError("이메일과 앱 비밀번호는 필수 항목입니다.")
 
         try:
             # 1. 이메일 주소에서 도메인 추출
             full_domain = address.split("@")[1]
+            print(full_domain)
             simple_domain = full_domain.split(".")[0].lower()
-
+            print(simple_domain)
             # 2. 도메인으로 IMAP 호스트 주소 가져오기
             imap_config = get_imap_config(simple_domain)
+            print(imap_config)
             imap_host = imap_config["host"]
             imap_port = imap_config["port"]
 
             # 3. IMAP 서버 연결 및 로그인 테스트
             with imaplib.IMAP4_SSL(imap_host, imap_port) as imap:
                 imap.login(address, password)
+                print("IMAP login successful")
                 # 로그인 성공 시 바로 로그아웃
                 imap.logout()
 

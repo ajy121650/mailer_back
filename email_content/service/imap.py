@@ -1,6 +1,6 @@
 import imaplib
 import email
-from email.header import decode_header, make_header
+from email.header import decode_header
 from email_content.models import EmailContent
 from email_account.models import EmailAccount
 from email_attachment.models import Attachment
@@ -49,7 +49,20 @@ def decode_mime_header(header_string):
     """MIME 인코딩된 이메일 헤더를 디코딩하여 단일 문자열로 반환합니다."""
     if not header_string:
         return ""
-    return str(make_header(decode_header(header_string)))
+
+    decoded_parts = []
+    for part, charset in decode_header(header_string):
+        if isinstance(part, bytes):
+            # 비표준 Charset(e.g., 'utf-8*ja') 수용을 위한 정리
+            cleaned_charset = (charset or "utf-8").split("*")[0].strip()
+            try:
+                decoded_parts.append(part.decode(cleaned_charset, "ignore"))
+            except LookupError:  # 알 수 없는 인코딩일 경우 fallback
+                decoded_parts.append(part.decode("utf-8", "ignore"))
+        else:
+            decoded_parts.append(part)
+
+    return "".join(decoded_parts)
 
 
 def parse_addresses(header_string):
@@ -68,7 +81,9 @@ def parse_addresses(header_string):
             decoded_name_parts = []
             for part, charset in decode_header(name):
                 if isinstance(part, bytes):
-                    decoded_name_parts.append(part.decode(charset or "utf-8", "ignore"))
+                    # 비표준 Charset(e.g., 'utf-8*ja') 수용을 위한 정리
+                    cleaned_charset = (charset or "utf-8").split("*")[0]
+                    decoded_name_parts.append(part.decode(cleaned_charset, "ignore"))
                 else:
                     decoded_name_parts.append(part)
             decoded_name = "".join(decoded_name_parts).strip()
@@ -167,14 +182,13 @@ def fetch_and_store_emails(address):
             for part in msg.walk():
                 ctype = part.get_content_type()
                 disp = str(part.get("Content-Disposition"))
+
+                charset = (part.get_content_charset() or "utf-8").split("*")[0]
+
                 if ctype == "text/plain" and "attachment" not in disp:
-                    text_body = part.get_payload(decode=True).decode(
-                        part.get_content_charset() or "utf-8", errors="ignore"
-                    )
+                    text_body = part.get_payload(decode=True).decode(charset, errors="ignore")
                 elif ctype == "text/html" and "attachment" not in disp:
-                    html_body = part.get_payload(decode=True).decode(
-                        part.get_content_charset() or "utf-8", errors="ignore"
-                    )
+                    html_body = part.get_payload(decode=True).decode(charset, errors="ignore")
 
                 if part.get_content_disposition() == "attachment":
                     has_attachment = True
@@ -186,10 +200,11 @@ def fetch_and_store_emails(address):
                         }
                     )
         else:
+            charset = (msg.get_content_charset() or "utf-8").split("*")[0]
             if msg.get_content_type() == "text/plain":
-                text_body = msg.get_payload(decode=True).decode(msg.get_content_charset() or "utf-8", errors="ignore")
+                text_body = msg.get_payload(decode=True).decode(charset, errors="ignore")
             elif msg.get_content_type() == "text/html":
-                html_body = msg.get_payload(decode=True).decode(msg.get_content_charset() or "utf-8", errors="ignore")
+                html_body = msg.get_payload(decode=True).decode(charset, errors="ignore")
 
         emails_to_process.append(
             {
