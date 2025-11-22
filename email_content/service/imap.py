@@ -1,22 +1,20 @@
 import imaplib
 import email
-from email.header import decode_header
+from email.header import decode_header, make_header
+import os
+import uuid
+import email.utils
+from datetime import datetime, timedelta
+
+from django.conf import settings
+from django.db import transaction
+
 from email_content.models import EmailContent
 from email_account.models import EmailAccount
 from email_attachment.models import Attachment
 from email_metadata.models import EmailMetadata
 from email_content.utils import get_imap_config
-import uuid
-import email.utils
 from utils.spam_filter import classify_emails_in_batch
-
-########## API 테스트를 위해 추가한 import ##########
-from django.conf import settings
-import os
-
-##################################################
-
-#### 스팸 필터 로직 추가 ####
 
 
 def save_attachment_locally(file_bytes, original_filename):
@@ -63,7 +61,7 @@ def decode_mime_header(header_string):
         else:
             decoded_parts.append(part)
 
-    return "".join(decoded_parts)
+    return str(make_header(decoded_parts))
 
 
 def parse_addresses(header_string):
@@ -104,12 +102,11 @@ def parse_addresses(header_string):
 
 def fetch_and_store_emails(address):
     """
-    1. EmailAccount 조회
-    2. IMAP 로그인 → 최근 50개 메일
-    #### START: 스팸 필터링 로직 추가 ####
-    3. 가져온 메일들을 스팸 필터로 일괄 분류
-    4. 분류 결과와 함께 Email + EmailMetadata + Attachment 저장
-    #### END: 스팸 필터링 로직 추가 ####
+    메모리 효율적인 방식으로 이메일을 동기화합니다.
+    1. 마지막 동기화 시간 이후의 새 메일만 조회합니다.
+    2. 첨부파일은 즉시 디스크에 저장하여 메모리 부하를 최소화합니다.
+    3. 수집된 메일 본문을 LLM에 일괄 전송하여 스팸 여부를 분류합니다.
+    4. 분류 결과와 함께 이메일 및 관련 데이터를 DB에 저장합니다.
     """
     # 1. 계정 조회
     account = EmailAccount.objects.filter(address=address).first()
@@ -126,202 +123,167 @@ def fetch_and_store_emails(address):
         imap = imaplib.IMAP4_SSL(imap_host, imap_port)
         imap.login(account.address, account.email_password)
         imap.select("INBOX")
-    except imaplib.IMAP4.error as e:
-        # 인증 실패, 서버 오류 등 IMAP 관련 에러 처리
-        raise ValueError(f"IMAP 연결 또는 로그인 실패: {e}")
     except Exception as e:
-        # 기타 예외 처리
-        raise ValueError(f"이메일 서버 연결 중 알 수 없는 오류: {e}")
+        raise ValueError(f"IMAP 연결 또는 로그인 실패: {e}")
 
-    # 3. 최근 50개 UID 가져오기
-    status, data = imap.search(None, "ALL")
-    all_uids = data[0].split()
-    recent_uids = all_uids[-50:] if len(all_uids) > 50 else all_uids
+    try:
+        # 3. UID 조회 최적화
+        search_criteria = "ALL"
+        sync_start_date = account.last_synced or (datetime.now() - timedelta(days=7))
+        search_date = (sync_start_date - timedelta(days=1)).strftime("%d-%b-%Y")
+        search_criteria = f'(SENTSINCE "{search_date}")'
 
-    #### 스팸 필터링을 위한 데이터 준비 단계 ####
-    emails_to_process = []
-    for uid in recent_uids:
-        status, msg_data = imap.fetch(uid, "(RFC822)")
-        raw_msg = msg_data[0][1]
-        msg = email.message_from_bytes(raw_msg)
-
-        message_id = msg.get("Message-ID")
-        gm_msgid = None
-
-        if imap_host == "imap.gmail.com":
-            gm_msgid = msg.get("X-GM-MSGID")
-
-        # 중복 스킵 로직 (EmailMetadata를 통해 계정별로 확인)
-        if imap_host == "imap.gmail.com":
-            if EmailMetadata.objects.filter(account=account, email__gm_msgid=gm_msgid).exists():
-                continue
+        status, data = imap.search(None, search_criteria)
+        if status != "OK":
+            all_uids = []
         else:
-            if EmailMetadata.objects.filter(account=account, email__message_id=message_id).exists():
-                continue
+            all_uids = data[0].split()
 
-        # 헤더 디코딩
-        subject = decode_mime_header(msg.get("Subject", ""))
-        from_header = decode_mime_header(msg.get("From", ""))
-        date = msg.get("Date", "")
+        uids_to_process = all_uids[-100:]  # 한 번에 최대 100개
 
-        # 주소 목록 파싱 및 디코딩
-        to_header_list = parse_addresses(msg.get("To", ""))
-        cc_header_list = parse_addresses(msg.get("Cc", ""))
-        bcc_header_list = parse_addresses(msg.get("Bcc", ""))
-
-        # date 파싱
-        try:
-            parsed_date = email.utils.parsedate_to_datetime(date)
-        except Exception:
-            parsed_date = None
-
-        # 본문 추출
-        text_body, html_body = None, None
-        has_attachment = False
-        attachments_data = []
-        if msg.is_multipart():
-            for part in msg.walk():
-                ctype = part.get_content_type()
-                disp = str(part.get("Content-Disposition"))
-
-                charset = (part.get_content_charset() or "utf-8").split("*")[0]
-
-                if ctype == "text/plain" and "attachment" not in disp:
-                    text_body = part.get_payload(decode=True).decode(charset, errors="ignore")
-                elif ctype == "text/html" and "attachment" not in disp:
-                    html_body = part.get_payload(decode=True).decode(charset, errors="ignore")
-
-                if part.get_content_disposition() == "attachment":
-                    has_attachment = True
-                    attachments_data.append(
-                        {
-                            "filename": part.get_filename(),
-                            "bytes": part.get_payload(decode=True),
-                            "content_type": part.get_content_type(),
-                        }
-                    )
-        else:
-            charset = (msg.get_content_charset() or "utf-8").split("*")[0]
-            if msg.get_content_type() == "text/plain":
-                text_body = msg.get_payload(decode=True).decode(charset, errors="ignore")
-            elif msg.get_content_type() == "text/html":
-                html_body = msg.get_payload(decode=True).decode(charset, errors="ignore")
-
-        emails_to_process.append(
-            {
-                "uid": uid.decode() if isinstance(uid, bytes) else str(uid),
-                "message_id": message_id,
-                "gm_msgid": gm_msgid,
-                "subject": subject,
-                "from_header": from_header,
-                "to_header": to_header_list,
-                "cc_header": cc_header_list,
-                "bcc_header": bcc_header_list,
-                "text_body": text_body,
-                "html_body": html_body,
-                "has_attachment": has_attachment,
-                "attachments_data": attachments_data,
-                "parsed_date": parsed_date,
-            }
-        )
-    #### 스팸 필터링을 위한 데이터 준비 끝 ####
-
-    #### 스팸 필터링 일괄 호출(불러온 50개에 대해) ####
-    emails_for_classification = [
-        {"id": e["uid"], "subject": e["subject"], "body": e["text_body"] or ""} for e in emails_to_process
-    ]
-
-    classification_results = {}
-    if emails_for_classification:
-        # --- 사용자 선호도 데이터 준비 ---
-        job_preference = account.job or ""
-        usage_preference = account.usage or ""
-        user_preferences = account.interests or {}  # account.interests는 JSONField (dict)
-        # --- 스팸 필터 일괄 호출 ---
-        classification_results = classify_emails_in_batch(
-            emails=emails_for_classification,
-            job=job_preference,
-            usage=usage_preference,
-            interests=user_preferences,
-        )
-    #### END: 스팸 필터 일괄 호출 단계 ####
-
-    #### START: 분류 결과와 함께 DB에 저장하는 단계 ####
-    for email_data in emails_to_process:
-        classification = classification_results.get(email_data["uid"], "inbox")
-        folder = "spam" if classification == "spam" else "inbox"
-        is_spammed = classification == "spam"
-        # 중복 저장 방지: 계정별 UID, gm_msgid, message_id 기준으로 재확인
-        # (상단 fetch 단계에서도 1차 필터링하지만, 저장 직전 2차 확인으로 안전성 강화)
-        if EmailMetadata.objects.filter(account=account, uid=email_data["uid"]).exists():
-            continue
-        if (
-            email_data.get("gm_msgid")
-            and EmailMetadata.objects.filter(account=account, email__gm_msgid=email_data["gm_msgid"]).exists()
-        ):
-            continue
-        if (
-            email_data.get("message_id")
-            and EmailMetadata.objects.filter(account=account, email__message_id=email_data["message_id"]).exists()
-        ):
-            continue
-        # classification = classification_results.get(email_data["uid"], "inbox")
-        # folder = "spam" if classification == "spam" else "inbox"
-        # is_spammed = classification == "spam"
-
-        # 5. EmailContent 저장
-        email_obj = EmailContent.objects.create(
-            message_id=email_data["message_id"],
-            gm_msgid=email_data["gm_msgid"],
-            subject=email_data["subject"],
-            from_header=email_data["from_header"],
-            to_header=email_data["to_header"],
-            cc_header=email_data["cc_header"],
-            bcc_header=email_data["bcc_header"],
-            text_body=email_data["text_body"],
-            html_body=email_data["html_body"],
-            has_attachment=email_data["has_attachment"],
-            date=email_data["parsed_date"],
-        )
-
-        # 6. EmailMetadata 저장
-        EmailMetadata.objects.create(
-            account=account,
-            email=email_obj,
-            uid=email_data["uid"],
-            folder=folder,  # <-- 스팸 필터 결과 적용
-            is_spammed=is_spammed,
-            received_at=email_data["parsed_date"],
-        )
-
-        # 7. 첨부파일 저장
-        for att_data in email_data["attachments_data"]:
-            file_bytes = att_data.get("bytes")
-            original_filename = att_data.get("filename")
-
-            # 파일 내용이 없으면 건너뜀
-            if not file_bytes:
-                continue
-
-            # 파일명이 없으면 이메일 제목을 기반으로 대체 파일명 생성
-            if not original_filename:
-                subject_base = email_data.get("subject", "unnamed")
-                # 파일명으로 사용하기 안전한 문자만 남김
-                safe_subject = "".join(c for c in subject_base if c.isalnum() or c in (" ", "_")).rstrip()
-                original_filename = f"{safe_subject}_attachment" if safe_subject else "unnamed_attachment"
-
-            # 파일을 로컬에 저장하고 상대 경로를 받음
-            local_path = save_attachment_locally(file_bytes, original_filename)
-
-            # Attachment 모델 필드에 맞게 데이터 저장
-            Attachment.objects.create(
-                email=email_obj,
-                file_name=original_filename,
-                mime_type=att_data.get("content_type"),
-                file_size=len(file_bytes),
-                file_path=local_path,
+        # 이미 DB에 있는 UID는 건너뛰기
+        if uids_to_process:
+            existing_uids = set(
+                EmailMetadata.objects.filter(
+                    account=account, uid__in=[uid.decode() for uid in uids_to_process]
+                ).values_list("uid", flat=True)
             )
-    #### END: 분류 결과와 함께 DB에 저장하는 단계 ####
+            uids_to_fetch = [uid for uid in uids_to_process if uid.decode() not in existing_uids]
+        else:
+            uids_to_fetch = []
 
-    imap.close()
-    imap.logout()
+        if not uids_to_fetch:
+            account.last_synced = datetime.now()
+            account.save(update_fields=["last_synced"])
+            return
+
+        # 4. 데이터 분리 수집 (1차 루프)
+        emails_for_llm = []
+        processed_email_data = {}
+
+        for uid in uids_to_fetch:
+            try:
+                status, msg_data = imap.fetch(uid, "(RFC822)")
+                if status != "OK":
+                    continue
+
+                msg = email.message_from_bytes(msg_data[0][1])
+
+                text_body, html_body = None, None
+                attachments_info = []
+
+                if msg.is_multipart():
+                    for part in msg.walk():
+                        ctype = part.get_content_type()
+                        disp = str(part.get("Content-Disposition"))
+
+                        try:
+                            charset = part.get_content_charset() or "utf-8"
+                            if "attachment" not in disp:
+                                if ctype == "text/plain":
+                                    text_body = part.get_payload(decode=True).decode(charset, errors="ignore")
+                                elif ctype == "text/html":
+                                    html_body = part.get_payload(decode=True).decode(charset, errors="ignore")
+
+                            if "attachment" in disp and part.get_filename():
+                                file_bytes = part.get_payload(decode=True)
+                                filename = decode_mime_header(part.get_filename())
+                                if file_bytes:
+                                    local_path = save_attachment_locally(file_bytes, filename)
+                                    attachments_info.append(
+                                        {
+                                            "filename": filename,
+                                            "mime_type": ctype,
+                                            "size": len(file_bytes),
+                                            "path": local_path,
+                                        }
+                                    )
+                        except Exception:
+                            continue  # 개별 파트 오류는 무시
+                else:
+                    charset = msg.get_content_charset() or "utf-8"
+                    if msg.get_content_type() == "text/plain":
+                        text_body = msg.get_payload(decode=True).decode(charset, errors="ignore")
+                    elif msg.get_content_type() == "text/html":
+                        html_body = msg.get_payload(decode=True).decode(charset, errors="ignore")
+
+                uid_str = uid.decode()
+                subject = decode_mime_header(msg.get("Subject", ""))
+
+                try:
+                    parsed_date = email.utils.parsedate_to_datetime(msg.get("Date", ""))
+                except Exception:
+                    parsed_date = datetime.now()
+
+                emails_for_llm.append({"id": uid_str, "subject": subject, "body": text_body or html_body or ""})
+
+                processed_email_data[uid_str] = {
+                    "message_id": msg.get("Message-ID"),
+                    "gm_msgid": msg.get("X-GM-MSGID") if "gmail" in imap_host else None,
+                    "subject": subject,
+                    "from_header": decode_mime_header(msg.get("From", "")),
+                    "to_header": ", ".join(parse_addresses(msg.get("To", ""))),
+                    "cc_header": ", ".join(parse_addresses(msg.get("Cc", ""))),
+                    "text_body": text_body,
+                    "html_body": html_body,
+                    "has_attachment": bool(attachments_info),
+                    "attachments": attachments_info,
+                    "parsed_date": parsed_date,
+                }
+            except Exception:
+                continue  # 개별 이메일 fetch/parse 오류는 무시
+
+        # 5. 스팸 필터 일괄 호출
+        classification_results = {}
+        if emails_for_llm:
+            job = account.job or ""
+            usage = account.usage or ""
+            interests = account.interests or []
+            classification_results = classify_emails_in_batch(
+                emails=emails_for_llm, job=job, usage=usage, interests=interests
+            )
+
+        # 6. DB에 저장 (2차 루프)
+        for uid_str, data in processed_email_data.items():
+            with transaction.atomic():
+                classification = classification_results.get(uid_str, "inbox")
+                is_spammed = classification == "spam"
+
+                email_obj = EmailContent.objects.create(
+                    message_id=data["message_id"],
+                    subject=data["subject"],
+                    from_header=data["from_header"],
+                    to_header=data["to_header"],
+                    cc_header=data["cc_header"],
+                    text_body=data["text_body"],
+                    html_body=data["html_body"],
+                    has_attachment=data["has_attachment"],
+                    date=data["parsed_date"],
+                    gm_msgid=data.get("gm_msgid"),
+                )
+
+                EmailMetadata.objects.create(
+                    account=account,
+                    email=email_obj,
+                    uid=uid_str,
+                    folder="spam" if is_spammed else "inbox",
+                    is_spammed=is_spammed,
+                    received_at=data["parsed_date"],
+                )
+
+                for att_info in data["attachments"]:
+                    Attachment.objects.create(
+                        email=email_obj,
+                        file_name=att_info["filename"],
+                        mime_type=att_info["mime_type"],
+                        file_size=att_info["size"],
+                        file_path=att_info["path"],
+                    )
+
+        # 마지막 동기화 시간 업데이트
+        account.last_synced = datetime.now()
+        account.save(update_fields=["last_synced"])
+
+    finally:
+        imap.close()
+        imap.logout()

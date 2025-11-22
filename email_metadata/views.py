@@ -103,16 +103,20 @@ class EmailMetadataListView(generics.ListAPIView):
         if not user.is_authenticated:
             return EmailMetadata.objects.none()
 
+        # 유저 소유 이메일 주소를 초기에 한 번만 조회하여 재사용
+        user_owned_addresses = set(EmailAccount.objects.filter(user=user).values_list("address", flat=True))
+
         # 소프트 딜리트된 메일 제외
-        base_queryset = EmailMetadata.objects.filter(account__user=user, deleted_at__isnull=True)
+        base_queryset = EmailMetadata.objects.select_related("email", "account").filter(
+            account__user=user, deleted_at__isnull=True
+        )
 
         folder = self.request.query_params.get("folder", None)
         accounts_param = self.request.query_params.get("accounts", None)
         search_query = self.request.query_params.get("query", None)
 
         if folder == "sent":
-            user_email_addresses = list(EmailAccount.objects.filter(user=user).values_list("address", flat=True))
-            from_filters = [Q(email__from_header__icontains=addr) for addr in user_email_addresses]
+            from_filters = [Q(email__from_header__icontains=addr) for addr in user_owned_addresses]
             from_query = Q()
             for f in from_filters:
                 from_query |= f
@@ -131,10 +135,9 @@ class EmailMetadataListView(generics.ListAPIView):
 
         if accounts_param:
             requested_emails = set(accounts_param.split(","))
-            user_emails = set(EmailAccount.objects.filter(user=user).values_list("address", flat=True))
 
-            if not requested_emails.issubset(user_emails):
-                invalid_accounts = sorted(list(requested_emails - user_emails))
+            if not requested_emails.issubset(user_owned_addresses):
+                invalid_accounts = sorted(list(requested_emails - user_owned_addresses))
                 raise serializers.ValidationError(
                     f"You do not have permission for the following accounts: {invalid_accounts}"
                 )
@@ -176,7 +179,6 @@ class EmailUpdateView(generics.RetrieveUpdateDestroyAPIView):
 
     http_method_names = ["get", "patch", "delete"]
     permission_classes = [TestPermission]
-    queryset = EmailMetadata.objects.all()
 
     def get_serializer_class(self):
         """요청 메서드에 따라 다른 시리얼라이저를 반환합니다."""
@@ -186,7 +188,9 @@ class EmailUpdateView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         """요청한 사용자가 소유하고, 영구 삭제되지 않은 이메일만 조회하도록 쿼리셋을 필터링합니다."""
-        return super().get_queryset().filter(account__user=self.request.user, deleted_at__isnull=True)
+        return EmailMetadata.objects.select_related("email", "account").filter(
+            account__user=self.request.user, deleted_at__isnull=True
+        )
 
     def partial_update(self, request, *args, **kwargs):
         kwargs["partial"] = True
@@ -275,13 +279,20 @@ class EmailSummarizeView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         email_content = metadata.email
-        if not email_content.text_body:
+        body_for_summary = email_content.text_body
+        is_html = False
+
+        if not body_for_summary and email_content.html_body:
+            body_for_summary = email_content.html_body
+            is_html = True
+
+        if not body_for_summary:
             return Response(
                 {"error": "Email body is empty."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        summary = summarize_email_content(email_content.subject, email_content.text_body)
+        summary = summarize_email_content(email_content.subject, body_for_summary, is_html=is_html)
 
         if not summary:
             return Response(

@@ -16,6 +16,7 @@ class EmailPreviewSerializer(serializers.ModelSerializer):
         fields = [
             "subject",
             "from_header",
+            "to_header",
             "date",
             "preview",  # 본문 대신 미리보기 필드 preview 사용.
         ]
