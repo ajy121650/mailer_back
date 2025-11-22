@@ -130,9 +130,9 @@ class MyTemplateListView(APIView):
         description="특정 사용자가 소유한 모든 템플릿 목록을 조회합니다.",
         responses=MyTemplateSerializer(many=True),
     )
-    def get(self, request, user_id):
+    def get(self, request, pk):
         try:
-            user = User.objects.get(id=user_id)
+            user = User.objects.get(id=pk)
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
