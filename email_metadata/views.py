@@ -48,6 +48,7 @@ class TestPermission(permissions.BasePermission):
 
 
 @extend_schema(
+    summary="메일 통합 조회",
     description="""
         메일 통합 조회를 위핸 API View입니다. 해당 API로 가능한 것:
         1. 이메일 계정 별 이메일 조회. (생략 시 전체 조회)

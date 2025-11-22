@@ -22,6 +22,7 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+from email_content.views import SendEmailView  # SendEmailView 임포트
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -35,6 +36,7 @@ urlpatterns = [
     path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
     # App APIs
     path("api/user/", include("user.urls")),
+    path("api/email/send/", SendEmailView.as_view(), name="send_email"),  # 새로운 send_email 엔드포인트
     path("api/email/", include("email_metadata.urls")),  # 로그인한 계정의 메일 조회.
     path("api/account/", include("email_account.urls")),
     path("api/attachment/", include("email_attachment.urls")),
