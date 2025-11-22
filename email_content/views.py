@@ -56,6 +56,15 @@ class SendEmailView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         validated_data = serializer.validated_data
+
+        # 대용량 요청 방어 로직
+        MAX_BODY_SIZE_MB = 25
+        if len(validated_data["body"]) > MAX_BODY_SIZE_MB * 1024 * 1024:
+            return Response(
+                {"error": f"이메일 본문 크기는 {MAX_BODY_SIZE_MB}MB를 초과할 수 없습니다."},
+                status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            )
+
         account_id = validated_data["account_id"]
 
         # 1. 요청자가 소유한 EmailAccount인지 확인 (보안)

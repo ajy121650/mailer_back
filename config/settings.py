@@ -36,7 +36,7 @@ CLERK_TURN_OFF = os.environ.get("CLERK_TURN_OFF") == "True"
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False  # 배포 때는 False로 설정.
 
 ALLOWED_HOSTS = ["3.37.134.115", "localhost", "127.0.0.1", "api.mailmailermailest.site"]
 

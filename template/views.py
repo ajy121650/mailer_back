@@ -137,7 +137,7 @@ class MyTemplateListView(APIView):
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
         try:
-            templates = Template.objects.filter(user=user)
+            templates = Template.objects.select_related("email_account").filter(user=user)
         except Template.DoesNotExist:
             return Response({"error": "No templates found for user"}, status=status.HTTP_404_NOT_FOUND)
 
