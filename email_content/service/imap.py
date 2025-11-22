@@ -8,6 +8,7 @@ from email_metadata.models import EmailMetadata
 from email_content.utils import get_imap_config
 import uuid
 import email.utils
+from utils.spam_filter import classify_emails_in_batch
 
 ########## API 테스트를 위해 추가한 import ##########
 from django.conf import settings
@@ -226,27 +227,30 @@ def fetch_and_store_emails(address):
     #### 스팸 필터링을 위한 데이터 준비 끝 ####
 
     #### 스팸 필터링 일괄 호출(불러온 50개에 대해) ####
-    # emails_for_classification = [
-    #     {"id": e["uid"], "subject": e["subject"], "body": e["text_body"] or ""} for e in emails_to_process
-    # ]
+    emails_for_classification = [
+        {"id": e["uid"], "subject": e["subject"], "body": e["text_body"] or ""} for e in emails_to_process
+    ]
 
-    # classification_results = {}
-    # if emails_for_classification:
-    #     # --- 사용자 선호도 데이터 준비 ---
-    #     job_preference = account.job or ""
-    #     usage_preference = account.usage or ""
-    #     user_preferences = account.interests or {}  # account.interests는 JSONField (dict)
-    #     # --- 스팸 필터 일괄 호출 ---
-    #     classification_results = classify_emails_in_batch(
-    #         emails=emails_for_classification,
-    #         job=job_preference,
-    #         usage=usage_preference,
-    #         interests=user_preferences,
-    #     )
+    classification_results = {}
+    if emails_for_classification:
+        # --- 사용자 선호도 데이터 준비 ---
+        job_preference = account.job or ""
+        usage_preference = account.usage or ""
+        user_preferences = account.interests or {}  # account.interests는 JSONField (dict)
+        # --- 스팸 필터 일괄 호출 ---
+        classification_results = classify_emails_in_batch(
+            emails=emails_for_classification,
+            job=job_preference,
+            usage=usage_preference,
+            interests=user_preferences,
+        )
     #### END: 스팸 필터 일괄 호출 단계 ####
 
     #### START: 분류 결과와 함께 DB에 저장하는 단계 ####
     for email_data in emails_to_process:
+        classification = classification_results.get(email_data["uid"], "inbox")
+        folder = "spam" if classification == "spam" else "inbox"
+        is_spammed = classification == "spam"
         # 중복 저장 방지: 계정별 UID, gm_msgid, message_id 기준으로 재확인
         # (상단 fetch 단계에서도 1차 필터링하지만, 저장 직전 2차 확인으로 안전성 강화)
         if EmailMetadata.objects.filter(account=account, uid=email_data["uid"]).exists():
@@ -285,8 +289,8 @@ def fetch_and_store_emails(address):
             account=account,
             email=email_obj,
             uid=email_data["uid"],
-            folder="inbox",  # <-- 스팸 필터 결과 적용
-            is_spammed=None,
+            folder=folder,  # <-- 스팸 필터 결과 적용
+            is_spammed=is_spammed,
             received_at=email_data["parsed_date"],
         )
 
