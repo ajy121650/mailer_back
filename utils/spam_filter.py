@@ -49,7 +49,7 @@ def classify_node(state: SpamState) -> SpamState:
     classify_prompt = PromptTemplate.from_template(prompt_text)
 
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash",  # flash 모델은 더 빠르고 quota가 넉넉함
+        model="gemini-2.5-pro",  # flash 모델은 더 빠르고 quota가 넉넉함
         temperature=0,
         google_api_key=api_key,
     ).with_structured_output(ClassificationMap)
@@ -83,7 +83,7 @@ def repair_node(state: SpamState) -> SpamState:
         return {"error": "GOOGLE_API_KEY not found"}
 
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash",  # flash 모델은 더 빠르고 quota가 넉넉함
+        model="gemini-2.5-pro",  # flash 모델은 더 빠르고 quota가 넉넉함
         temperature=0,
         google_api_key=api_key,
     )
