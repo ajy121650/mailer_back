@@ -1,6 +1,7 @@
 import requests
 from functools import lru_cache
 from jose import jwt
+from jose.backends.rsa_backend import RSAKey
 from django.conf import settings
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from rest_framework import authentication, exceptions
@@ -20,7 +21,7 @@ def _get_public_key(token):
     for key in _fetch_jwks().get("keys", []):
         if key.get("kid") == kid:
             # jose가 JWK를 키 객체로 바꿔서 쓸 수 있게 해줌
-            return jwt.algorithms.RSAAlgorithm.from_jwk(key)
+            return RSAKey(key, algorithm='RS256')
     raise exceptions.AuthenticationFailed("Public key not found for token")
 
 
@@ -60,6 +61,19 @@ class ClerkAuthentication(authentication.BaseAuthentication):
         user, _created = User.objects.get_or_create(user_id=clerk_user_id)
         # DRF는 (user, auth) 튜플을 반환해야 함. auth에 payload를 넘기면 뷰에서 참조 가능
         return (user, payload)
+
+
+class ClerkAuthenticationScheme(OpenApiAuthenticationExtension):
+    target_class = "user.auth.ClerkAuthentication"
+    name = "clerkAuth"
+
+    def get_security_definition(self, auto_schema):
+        return {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": "Clerk JWT 토큰을 사용한 인증. Authorization 헤더에 'Bearer <token>' 형식으로 전달합니다.",
+        }
 
 
 ######################## API 테스트를 위한 임시 Authentication #############

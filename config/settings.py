@@ -98,6 +98,7 @@ INSTALLED_APPS = [
     "template",
     "contact",
     # Third-party Apps
+    "corsheaders",
     "rest_framework",
     # drf 문서 자동생성용 앱
     "drf_spectacular",
@@ -217,6 +218,7 @@ SPECTACULAR_SETTINGS = {
         "displayOperationId": True,
     },
     "AUTH_SCHEMA_EXTENSIONS": {
+        "clerkAuth": "user.auth.ClerkAuthenticationScheme",
         "test_auth": "user.auth.TestAuthenticationScheme",
     },
     # API 그룹화를 위한 경로 접두사 지정
@@ -234,7 +236,7 @@ SPECTACULAR_SETTINGS = {
 
 # Clerk 환경변수
 # CLERK_ISSUER는 Clerk 대시보드에서 복사
-CLERK_ISSUER = "https://<your-clerk-domain>"  # 예: https://example.clerk.accounts.dev
+CLERK_ISSUER = "https://exotic-donkey-26.clerk.accounts.dev"  # 예: https://example.clerk.accounts.dev
 CLERK_JWKS_URL = f"{CLERK_ISSUER}/.well-known/jwks.json"
 CLERK_AUDIENCE = None  # Session Token 쓰면 보통 None. JWT Template 쓰면 "my-backend" 등으로 세팅
 
