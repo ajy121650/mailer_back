@@ -99,12 +99,18 @@ class EmailMetadataListView(generics.ListAPIView):
         'sent' 폴더와 그 외 폴더의 로직을 분리하여 처리합니다.
         """
         user = self.request.user
+        
+        # 디버깅: 요청 유저 정보 출력
+        print(f"[DEBUG] request.user: {user}")
+        print(f"[DEBUG] request.user.id: {user.id if hasattr(user, 'id') else 'N/A'}")
+        print(f"[DEBUG] request.user.user_id: {user.user_id if hasattr(user, 'user_id') else 'N/A'}")
 
         if not user.is_authenticated:
             return EmailMetadata.objects.none()
 
         # 유저 소유 이메일 주소를 초기에 한 번만 조회하여 재사용
         user_owned_addresses = set(EmailAccount.objects.filter(user=user).values_list("address", flat=True))
+        print(f"[DEBUG] user_owned_addresses: {user_owned_addresses}")
 
         # 소프트 딜리트된 메일 제외
         base_queryset = EmailMetadata.objects.select_related("email", "account").filter(
