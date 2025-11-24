@@ -1,10 +1,10 @@
 import imaplib
 import email
-from email.header import decode_header, make_header
+from email.header import decode_header
 import os
 import uuid
 import email.utils
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.conf import settings
 from django.db import transaction
@@ -15,6 +15,9 @@ from email_attachment.models import Attachment
 from email_metadata.models import EmailMetadata
 from email_content.utils import get_imap_config
 from utils.spam_filter import classify_emails_in_batch
+
+# Django의 timezone 모듈 임포트 (RuntimeWarning 해결용)
+from django.utils import timezone
 
 
 def save_attachment_locally(file_bytes, original_filename):
@@ -61,7 +64,7 @@ def decode_mime_header(header_string):
         else:
             decoded_parts.append(part)
 
-    return str(make_header(decoded_parts))
+    return "".join(decoded_parts)
 
 
 def parse_addresses(header_string):
@@ -127,21 +130,29 @@ def fetch_and_store_emails(address):
         raise ValueError(f"IMAP 연결 또는 로그인 실패: {e}")
 
     try:
-        # 3. UID 조회 최적화
-        search_criteria = "ALL"
-        sync_start_date = account.last_synced or (datetime.now() - timedelta(days=7))
-        search_date = (sync_start_date - timedelta(days=1)).strftime("%d-%b-%Y")
-        search_criteria = f'(SENTSINCE "{search_date}")'
-
-        status, data = imap.search(None, search_criteria)
-        if status != "OK":
-            all_uids = []
+        # 3. UID 조회 최적화 (하이브리드 방식)
+        if account.last_synced:
+            # --- 이후 동기화: 마지막 동기화 이후의 새 메일만 가져옴 ---
+            sync_start_date = account.last_synced
+            search_date = (sync_start_date - timedelta(days=1)).strftime("%d-%b-%Y")
+            search_criteria = f'(SENTSINCE "{search_date}")'
+            status, data = imap.search(None, search_criteria)
+            if status != "OK":
+                all_uids = []
+            else:
+                all_uids = data[0].split()
+            uids_to_process = all_uids
         else:
-            all_uids = data[0].split()
+            # --- 최초 동기화: 최신 50개 메일만 가져옴 ---
+            search_criteria = "ALL"
+            status, data = imap.search(None, search_criteria)
+            if status != "OK":
+                all_uids = []
+            else:
+                all_uids = data[0].split()
+            uids_to_process = all_uids[-50:]
 
-        uids_to_process = all_uids[-100:]  # 한 번에 최대 100개
-
-        # 이미 DB에 있는 UID는 건너뛰기
+        # 이미 DB에 있는 UID는 건너뛰기 (공통 로직)
         if uids_to_process:
             existing_uids = set(
                 EmailMetadata.objects.filter(
@@ -153,7 +164,7 @@ def fetch_and_store_emails(address):
             uids_to_fetch = []
 
         if not uids_to_fetch:
-            account.last_synced = datetime.now()
+            account.last_synced = timezone.now()
             account.save(update_fields=["last_synced"])
             return
 
@@ -213,7 +224,7 @@ def fetch_and_store_emails(address):
                 try:
                     parsed_date = email.utils.parsedate_to_datetime(msg.get("Date", ""))
                 except Exception:
-                    parsed_date = datetime.now()
+                    parsed_date = timezone.now()
 
                 emails_for_llm.append({"id": uid_str, "subject": subject, "body": text_body or html_body or ""})
 
@@ -281,7 +292,7 @@ def fetch_and_store_emails(address):
                     )
 
         # 마지막 동기화 시간 업데이트
-        account.last_synced = datetime.now()
+        account.last_synced = timezone.now()
         account.save(update_fields=["last_synced"])
 
     finally:

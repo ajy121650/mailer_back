@@ -78,7 +78,7 @@ class ClerkAuthenticationScheme(OpenApiAuthenticationExtension):
 
 ######################## API 테스트를 위한 임시 Authentication #############
 class TestAuthentication(authentication.BaseAuthentication):
-    """(API_TEST_MODE=True 일 때 사용) 모든 요청을 'testuser'로 자동 인증하는 테스트용 클래스"""
+    """(=True 일 때 사용) 모든 요청을 'testuser'로 자동 인증하는 테스트용 클래스"""
 
     def authenticate(self, request):
         # 무조건 'testuser'로 사용자를 찾거나, 없으면 생성
