@@ -218,7 +218,7 @@ SPECTACULAR_SETTINGS = {
         "displayOperationId": True,
     },
     "AUTH_SCHEMA_EXTENSIONS": {
-        "clerk_auth": "user.auth.ClerkAuthenticationScheme",
+        "clerkAuth": "user.auth.ClerkAuthenticationScheme",
         "test_auth": "user.auth.TestAuthenticationScheme",
     },
     # API 그룹화를 위한 경로 접두사 지정
