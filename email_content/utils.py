@@ -43,6 +43,7 @@ def get_smtp_config(domain: str):
         "office365": {"host": "smtp.office365.com", "port": 587, "starttls": True},
         "yahoo": {"host": "smtp.mail.yahoo.com", "port": 465, "ssl": True},
         "icloud": {"host": "smtp.mail.me.com", "port": 587, "starttls": True},
+        "snu": {"host": "smtp.gmail.com", "port": 587, "starttls": True},
     }
 
     if domain in table:
