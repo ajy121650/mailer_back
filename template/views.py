@@ -52,7 +52,7 @@ class ViewTemplateDetailView(APIView):
     @extend_schema(
         summary="내 템플릿으로 가져오기",
         description="특정 템플릿을 지정된 사용자의 이메일 계정들로 복사하여 '내 템플릿'으로 저장합니다.",
-        request={"application/json": {"example": {"user_id": 1, "email_account_ids": [1, 2]}}},
+        request={"application/json": {"example": {"user_id": "user_xxxxxxxxxxxx", "email_account_ids": [1, 2]}}},
         responses={201: MyTemplateSerializer(many=True)},
     )
     def post(self, request, pk):
