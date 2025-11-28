@@ -21,7 +21,7 @@ def _get_public_key(token):
     for key in _fetch_jwks().get("keys", []):
         if key.get("kid") == kid:
             # jose가 JWK를 키 객체로 바꿔서 쓸 수 있게 해줌
-            return RSAKey(key, algorithm="RS256")
+            return RSAKey(key, algorithm='RS256')
     raise exceptions.AuthenticationFailed("Public key not found for token")
 
 
