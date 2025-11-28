@@ -52,19 +52,19 @@ class ViewTemplateDetailView(APIView):
     @extend_schema(
         summary="내 템플릿으로 가져오기",
         description="특정 템플릿을 지정된 사용자의 이메일 계정들로 복사하여 '내 템플릿'으로 저장합니다.",
-        request={"application/json": {"example": {"user_id": "user_xxxxxxxxxxxx", "email_account_ids": [1, 2]}}},
+        request={"application/json": {"example": {"id": 1, "email_account_ids": [1, 2]}}},
         responses={201: MyTemplateSerializer(many=True)},
     )
     def post(self, request, pk):
-        # Expect JSON body: { "user_id": int, "email_account_ids": [int, ...] }
+        # Expect JSON body: { "id": int, "email_account_ids": [int, ...] }
         data = request.data if isinstance(request.data, dict) else {}
 
-        user_id = data.get("user_id")
+        id = data.get("id")
         email_account_ids = data.get("email_account_ids")
 
         # Basic presence and type checks
-        if user_id is None:
-            return Response({"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if id is None:
+            return Response({"error": "id(user's pk) is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         if not isinstance(email_account_ids, list):
             return Response({"error": "email_account_ids must be a list"}, status=status.HTTP_400_BAD_REQUEST)
@@ -77,7 +77,7 @@ class ViewTemplateDetailView(APIView):
 
         # Validate user exists
         try:
-            user = User.objects.get(id=int(user_id))
+            user = User.objects.get(id=int(id))
         except (User.DoesNotExist, ValueError, TypeError):
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -195,9 +195,12 @@ class MyTemplateDetailView(APIView):
     )
     def get(self, request, pk):
         try:
-            template = Template.objects.get(pk=pk)
+            template = Template.objects.get(pk=pk, user=request.user)
         except Template.DoesNotExist:
-            return Response({"error": "Template not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Template not found or you do not have permission to access it"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         serializer = MyTemplateSerializer(template)
         return Response(serializer.data, status=status.HTTP_200_OK)
