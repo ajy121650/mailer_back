@@ -639,7 +639,7 @@ GET /api/templates/viewtemplate/
 ### 6.2. 공개 템플릿 상세 조회 (구현 완)
 
 ```jsx
-GET /api/templates/viewtemplate/{template_id}/
+GET /api/template/viewtemplate/{template_id}/
 ```
 
 - **설명**: 특정 공개 템플릿(`template_id`)의 상세 내용을 조회한다.

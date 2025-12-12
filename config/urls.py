@@ -39,7 +39,7 @@ urlpatterns = [
     path("api/email/send/", SendEmailView.as_view(), name="send_email"),  # 새로운 send_email 엔드포인트
     path("api/email/", include("email_metadata.urls")),  # 로그인한 계정의 메일 조회.
     path("api/account/", include("email_account.urls")),
-    path("api/attachment/", include("email_attachment.urls")),
+    path("api/attachments/", include("email_attachment.urls")),
     path("api/template/", include("template.urls")),
     path("api/contact/", include("contact.urls")),
 ]
