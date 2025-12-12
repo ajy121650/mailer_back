@@ -1429,6 +1429,11 @@ dependencies = [
     { name = "wheel" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pre-commit" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "annotated-types", specifier = ">=0.7.0" },
@@ -1459,6 +1464,9 @@ requires-dist = [
     { name = "sqlparse", specifier = "==0.5.3" },
     { name = "wheel", specifier = "==0.45.1" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pre-commit", specifier = ">=4.4.0" }]
 
 [[package]]
 name = "marshmallow"
