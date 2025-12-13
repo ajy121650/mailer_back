@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 
@@ -16,9 +17,7 @@ from langgraph.graph import StateGraph, END
 from typing import Literal
 from pydantic import RootModel
 
-# 스팸메일 처리 로직 피드백.
-# 정확도로 하려면 있는 태그들 중 하나를 골라서 집어넣어달라고 지시를 주면 그게 좋을 것 같다.
-# 개별 메일 단위로 iteration하고 검증용 요청도 하나 보내놓는 거 좋아보임.
+logger = logging.getLogger(__name__)
 
 
 # -------------------- State 정의 --------------------
@@ -83,7 +82,7 @@ def repair_node(state: SpamState) -> SpamState:
         return {"error": "GOOGLE_API_KEY not found"}
 
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-pro",  # flash 모델은 더 빠르고 quota가 넉넉함
+        model="gemini-2.5-pro",
         temperature=0,
         google_api_key=api_key,
     )
@@ -142,5 +141,11 @@ def classify_emails_in_batch(emails: list, job: str, interests: list, usage: str
     app = build_spam_graph()
     state = {"emails": emails, "job": job, "interests": interests, "usage": usage}
     final_state = app.invoke(state)
+
+    if "error" in final_state and final_state["error"]:
+        logger.error(
+            "LLM 스팸 분류 중 재시도 끝에 최종 오류가 발생했습니다. 기본값 'inbox'로 처리됩니다. 오류: %s",
+            final_state["error"],
+        )
 
     return final_state.get("result", {})
