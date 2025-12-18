@@ -1,20 +1,20 @@
 import imaplib
 import email
 from email.header import decode_header
-import os
-import uuid
 import email.utils
 import logging
+import os
+import uuid
 
-from django.conf import settings
 from django.db import transaction
+from django.conf import settings
 from django.db.models import IntegerField, Max
 from django.db.models.functions import Cast
 
 from email_content.models import EmailContent
 from email_account.models import EmailAccount
-from email_attachment.models import Attachment
 from email_metadata.models import EmailMetadata
+from email_attachment.models import Attachment
 from email_content.utils import get_imap_config
 from utils.spam_filter import classify_emails_in_batch
 
@@ -239,15 +239,27 @@ def fetch_and_store_emails(address):
                                 file_bytes = part.get_payload(decode=True)
                                 filename = decode_mime_header(part.get_filename())
                                 if file_bytes:
-                                    local_path = save_attachment_locally(file_bytes, filename)
-                                    attachments_info.append(
-                                        {
-                                            "filename": filename,
-                                            "mime_type": ctype,
-                                            "size": len(file_bytes),
-                                            "path": local_path,
-                                        }
-                                    )
+                                    if settings.SAVE_ATTACHMENTS:
+                                        local_path = save_attachment_locally(file_bytes, filename)
+                                        attachments_info.append(
+                                            {
+                                                "filename": filename,
+                                                "mime_type": ctype,
+                                                "size": len(file_bytes),
+                                                "path": local_path,
+                                            }
+                                        )
+                                    else:
+                                        # 첨부파일 저장 비활성화 시, 정보만 기록
+                                        attachments_info.append(
+                                            {
+                                                "filename": filename,
+                                                "mime_type": ctype,
+                                                "size": len(file_bytes),
+                                                "path": None,  # 저장 안했으므로 경로는 None
+                                            }
+                                        )
+
                         except Exception as e:
                             logger.warning(f"[{address}] UID {uid_str}의 일부 파트 처리 중 오류: {e}", exc_info=True)
                             continue  # 개별 파트 오류는 무시
@@ -333,14 +345,17 @@ def fetch_and_store_emails(address):
                         received_at=data["parsed_date"],
                     )
 
-                    for att_info in data["attachments"]:
-                        Attachment.objects.create(
-                            email=email_obj,
-                            file_name=att_info["filename"],
-                            mime_type=att_info["mime_type"],
-                            file_size=att_info["size"],
-                            file_path=att_info["path"],
-                        )
+                    if settings.SAVE_ATTACHMENTS:
+                        for att_info in data["attachments"]:
+                            # 저장 경로가 있는 경우에만 DB에 기록
+                            if att_info.get("path"):
+                                Attachment.objects.create(
+                                    email=email_obj,
+                                    file_name=att_info["filename"],
+                                    mime_type=att_info["mime_type"],
+                                    file_size=att_info["size"],
+                                    file_path=att_info["path"],
+                                )
                     synced_count += 1
                     logger.info(f"[{address}] UID {uid_str} DB 저장 완료.")
             except Exception as e:
