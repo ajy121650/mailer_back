@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from email_content.models import EmailContent
 from .models import EmailMetadata
+from email_attachment.serializers import AttachmentSerializer
 import re
 import html
 from email.header import decode_header, make_header
@@ -16,6 +17,7 @@ class EmailPreviewSerializer(serializers.ModelSerializer):
         fields = [
             "subject",
             "from_header",
+            "to_header",
             "date",
             "preview",  # 본문 대신 미리보기 필드 preview 사용.
         ]
@@ -81,6 +83,8 @@ class EmailMetadataListSerializer(serializers.ModelSerializer):
 
 # 상세 조회 및 수정용 시리얼라이저
 class EmailContentSerializer(serializers.ModelSerializer):
+    attachments = AttachmentSerializer(many=True, read_only=True)
+
     class Meta:
         model = EmailContent
         fields = [
@@ -92,6 +96,7 @@ class EmailContentSerializer(serializers.ModelSerializer):
             "text_body",
             "html_body",
             "date",
+            "attachments",
         ]
 
 

@@ -1,9 +1,22 @@
 import os
+import sys
 import django
 from dotenv import load_dotenv
-from user.models import User
-from email_account.models import EmailAccount
-from email_content.utils import get_imap_config
+
+# ----------------------------------------------------------------------
+#  프로젝트 루트 경로를 sys.path에 추가 (하위 디렉터리에서 실행하기 위함)
+# ----------------------------------------------------------------------
+# 현재 스크립트 파일의 절대 경로
+current_script_path = os.path.abspath(__file__)
+# test_setup 디렉터리
+test_setup_dir = os.path.dirname(current_script_path)
+# 프로젝트 루트 디렉터리 (test_setup의 부모)
+project_root = os.path.dirname(test_setup_dir)
+# sys.path에 프로젝트 루트 추가
+if project_root not in sys.path:
+    sys.path.append(project_root)
+# ----------------------------------------------------------------------
+
 
 # --- Django Setup ---
 # PWD: /home/dongi/mailer_back
@@ -21,6 +34,11 @@ def main():
     - 'testuser'라는 ID를 가진 사용자를 생성하거나 가져옵니다.
     - .env에 지정된 이메일 주소와 비밀번호로 EmailAccount를 생성하거나 업데이트합니다.
     """
+    # django.setup()이 호출된 이후에 모델을 임포트해야 합니다.
+    # pre-commit(linter) 규칙을 준수하기 위해 함수 내에서 임포트합니다.
+    from user.models import User
+    from email_account.models import EmailAccount
+
     print("--- 테스트 설정 시작 ---")
 
     # .env 파일에서 환경 변수 로드
@@ -50,8 +68,6 @@ def main():
         # 'user@gmail.com' -> 'gmail.com' -> 'gmail'
         full_domain = email_address.split("@")[1]
         simple_domain = full_domain.split(".")[0].lower()
-        imap_config = get_imap_config(simple_domain)
-        imap_host = imap_config["host"]
     except (IndexError, AttributeError):
         print(f"오류: 유효하지 않은 이메일 주소 형식입니다: {email_address}")
         return
@@ -64,7 +80,7 @@ def main():
         address=email_address,
         defaults={
             "user": user,
-            "domain": imap_host,  # 올바른 IMAP 호스트 주소 사용
+            "domain": simple_domain,
             "is_valid": True,
             "job": "컴퓨터 공학과 학생",
             "usage": "공부용",

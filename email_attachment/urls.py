@@ -1,9 +1,8 @@
-### views import example
-# from .views import PostListView, PostDetailView
-###
+from django.urls import path
+from .views import AttachmentDownloadView
 
-app_name = "email_attachments"
+app_name = "email_attachment"
 
 urlpatterns = [
-    # path("", PostListView.as_view()), ### path example
+    path("<int:pk>/download/", AttachmentDownloadView.as_view(), name="attachment-download"),
 ]

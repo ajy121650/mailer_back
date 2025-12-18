@@ -19,7 +19,7 @@ import requests
     examples=[
         OpenApiExample(
             "정상 응답",
-            value={"user_id": "user_xxxxxxxxxxxx"},
+            value={"user_id": "user_xxxxxxxxxxxx", "id": 1},
             response_only=True,
         )
     ],
@@ -30,11 +30,7 @@ class MeView(APIView):
     def get(self, request):
         # request.user: 우리 DB의 User
         # request.auth: Clerk JWT payload (sub, sid, ...)
-        return Response(
-            {
-                "user_id": request.user.user_id,
-            }
-        )
+        return Response({"user_id": request.user.user_id, "id": request.user.id})
 
 
 # 헬스체크 (공개)

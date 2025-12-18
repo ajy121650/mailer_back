@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from user.models import User
 from email_account.models import EmailAccount
 
@@ -18,7 +19,9 @@ class Template(models.Model):
     main_category = models.CharField(max_length=100, default="", null=True, blank=True)
     sub_category = models.CharField(max_length=100, default="", null=True, blank=True)
     topic = models.CharField(max_length=100, default="", null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    # Stored creation timestamp. Using default=timezone.now (instead of auto_now_add)
+    # makes it easier to backfill or override in tests while still assigning automatically.
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
 
     def __str__(self):
         return f"Template#{self.id} of {self.email_account.address}"

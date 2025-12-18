@@ -22,11 +22,11 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
 # Clerk 사용 안함 환경변수 (테스트용)
 CLERK_TURN_OFF = os.environ.get("CLERK_TURN_OFF") == "True"
-
-# S3 사용 안함 환경변수 (테스트용)
-S3_TURN_OFF = os.environ.get("S3_TURN_OFF") == "True"
 
 
 # Quick-start development settings - unsuitable for production
@@ -36,10 +36,55 @@ S3_TURN_OFF = os.environ.get("S3_TURN_OFF") == "True"
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False  # 배포 때는 False로 설정.
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["3.37.134.115", "localhost", "127.0.0.1", "api.mailmailermailest.site"]
 
+# CORS 설정
+# CORS 설정
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "https://mailmailermailest.site",
+    "https://www.mailmailermailest.site",
+]
+
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
+# CSRF 설정
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://mailmailermailest.site",
+    "https://www.mailmailermailest.site",
+    "https://api.mailmailermailest.site",
+]
 
 # Application definition
 
@@ -53,6 +98,7 @@ INSTALLED_APPS = [
     "template",
     "contact",
     # Third-party Apps
+    "corsheaders",
     "rest_framework",
     # drf 문서 자동생성용 앱
     "drf_spectacular",
@@ -68,6 +114,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -171,13 +218,25 @@ SPECTACULAR_SETTINGS = {
         "displayOperationId": True,
     },
     "AUTH_SCHEMA_EXTENSIONS": {
+        "clerkAuth": "user.auth.ClerkAuthenticationScheme",
         "test_auth": "user.auth.TestAuthenticationScheme",
     },
+    # API 그룹화를 위한 경로 접두사 지정
+    "SCHEMA_PATH_PREFIX": r"/api",
+    # 각 앱(태그)에 대한 설명 추가
+    "TAGS": [
+        {"name": "user", "description": "사용자 인증 및 정보 관련 API"},
+        {"name": "account", "description": "이메일 계정 연동 및 관리 API"},
+        {"name": "email", "description": "통합 메일 조회, 관리 및 요약 API"},
+        {"name": "contact", "description": "주소록(즐겨찾기) 관리 API"},
+        {"name": "template", "description": "메일 템플릿 관련 API"},
+        {"name": "attachment", "description": "첨부파일 관련 API"},
+    ],
 }
 
 # Clerk 환경변수
 # CLERK_ISSUER는 Clerk 대시보드에서 복사
-CLERK_ISSUER = "https://<your-clerk-domain>"  # 예: https://example.clerk.accounts.dev
+CLERK_ISSUER = "https://exotic-donkey-26.clerk.accounts.dev"  # 예: https://example.clerk.accounts.dev
 CLERK_JWKS_URL = f"{CLERK_ISSUER}/.well-known/jwks.json"
 CLERK_AUDIENCE = None  # Session Token 쓰면 보통 None. JWT Template 쓰면 "my-backend" 등으로 세팅
 
@@ -189,9 +248,9 @@ CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"
 
 
 # ####################################################################
-# API TEST MODE (Clerk/S3 비활성화)
+# API TEST MODE (Clerk 비활성화)
 # ####################################################################
-# 사용법: .env 파일에 API_TEST_MODE=True 설정
+# 사용법: .env 파일에 CLERK_TURN_OFF=True 설정
 # 프로덕션 전환 시: 이 블록 전체를 삭제하거나, .env 파일의 값을 False로 바꾸세요.
 # ####################################################################
 if CLERK_TURN_OFF:
@@ -200,6 +259,55 @@ if CLERK_TURN_OFF:
         "user.auth.TestAuthentication",
     ]
 
-if S3_TURN_OFF:
-    # 2. 파일 저장을 S3 대신 로컬 파일 시스템으로 변경
-    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+#######################################################################
+
+
+# Celery Settings
+CELERY_BROKER_URL = None
+CELERY_RESULT_BACKEND = None
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
+CELERY_TIMEZONE = "Asia/Seoul"
+CELERY_ENABLE_UTC = False
+
+# 주기적 작업 스케줄(Celery Beat)
+
+CELERY_BEAT_SCHEDULE = {
+    # 60초마다 스팸 분류 시도 (t2.micro 최적화)
+    "classify-unprocessed-email-metadata": {
+        "task": "email_metadata.tasks.classify_unprocessed_metadata",
+        "schedule": 60.0,  # seconds (30→60 for t2.micro)
+        "kwargs": {"batch_size": 10, "sleep": 2.0},  # 배치 축소, 간격 증가
+    },
+    # 5분마다 큐 상태 로깅 (t2.micro 최적화)
+    "log-spam-queue-depth": {
+        "task": "email_metadata.tasks.log_spam_queue_depth",
+        "schedule": 300.0,  # 120→300 for less frequent logging
+    },
+}
+
+# 로깅 설정
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} [{module}/{funcName}] {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+}

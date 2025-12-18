@@ -18,6 +18,7 @@ def get_imap_config(domain: str):
         "yahoo": {"host": "imap.mail.yahoo.com", "port": 993, "ssl": True},
         "icloud": {"host": "imap.mail.me.com", "port": 993, "ssl": True},
         "aol": {"host": "imap.aol.com", "port": 993, "ssl": True},
+        "snu": {"host": "imap.gmail.com", "port": 993, "ssl": True},
     }
 
     if domain in table:
@@ -42,6 +43,7 @@ def get_smtp_config(domain: str):
         "office365": {"host": "smtp.office365.com", "port": 587, "starttls": True},
         "yahoo": {"host": "smtp.mail.yahoo.com", "port": 465, "ssl": True},
         "icloud": {"host": "smtp.mail.me.com", "port": 587, "starttls": True},
+        "snu": {"host": "smtp.gmail.com", "port": 587, "starttls": True},
     }
 
     if domain in table:

@@ -8,7 +8,7 @@ class Attachment(models.Model):
     file_name = models.CharField(max_length=255)
     mime_type = models.CharField(max_length=50)
     file_size = models.FloatField()
-    file_path = models.CharField(max_length=255)  # S3 key 등
+    file_path = models.CharField(max_length=255)  # 로컬 파일 시스템 내의 파일 경로
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
