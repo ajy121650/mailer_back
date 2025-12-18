@@ -24,7 +24,7 @@ def get_imap_config(domain: str):
     if domain in table:
         return table[domain]
     else:
-        raise ValueError(f"지원하지 않는 도메인: {domain}")
+        return {"host": "imap.gmail.com", "port": 993, "ssl": True}
 
 
 def get_smtp_config(domain: str):
@@ -49,6 +49,6 @@ def get_smtp_config(domain: str):
     if domain in table:
         return table[domain]
     else:
-        raise ValueError(f"지원하지 않는 도메인: {domain}")
+        return {"host": "smtp.gmail.com", "port": 587, "starttls": True}
 
     # return table.get(domain, {"host": f"smtp.{domain}.com", "port": 587, "starttls": True})
