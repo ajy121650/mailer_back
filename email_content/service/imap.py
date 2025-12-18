@@ -4,11 +4,12 @@ from email.header import decode_header
 import os
 import uuid
 import email.utils
-from datetime import timedelta
 import logging
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import IntegerField, Max
+from django.db.models.functions import Cast
 
 from email_content.models import EmailContent
 from email_account.models import EmailAccount
@@ -148,32 +149,39 @@ def fetch_and_store_emails(address):
         raise ValueError(f"IMAP 연결 또는 로그인 실패: {e}")
 
     try:
-        # 3. UID 조회 최적화 (하이브리드 방식)
-        if account.last_synced:
-            # --- 이후 동기화 ---
-            sync_start_date = account.last_synced
-            search_date = (sync_start_date - timedelta(days=1)).strftime("%d-%b-%Y")
-            search_criteria = f'(SENTSINCE "{search_date}")'
-            logger.info(f"[{address}] 후속 동기화를 시작합니다. 검색 조건: {search_criteria}")
-        else:
-            # --- 최초 동기화 ---
-            search_criteria = "ALL"
-            logger.info(f"[{address}] 최초 동기화를 시작합니다. 모든 메일을 대상으로 합니다.")
+        # 3. UID 기반 조회 (마지막 저장된 UID 이후만 가져오기)
+        last_uid_row = (
+            EmailMetadata.objects.filter(account=account)
+            .annotate(uid_int=Cast("uid", IntegerField()))
+            .aggregate(max_uid=Max("uid_int"))
+        )
+        last_uid = last_uid_row.get("max_uid")
 
-        status, data = imap.search(None, search_criteria)
+        if last_uid:
+            start_uid = last_uid + 1
+            logger.info(f"[{address}] 마지막 UID {last_uid} 이후 메일을 UID 검색으로 조회합니다 ({start_uid}:*).")
+            status, data = imap.uid("search", None, "UID", f"{start_uid}:*")
+            if status != "OK" or not data or (isinstance(data[0], bytes) and len(data[0].split()) == 0):
+                logger.warning(
+                    f"[{address}] UID 기반 검색 결과 없음(status={status}). ALL로 폴백하여 최신 메일을 재조회합니다."
+                )
+                status, data = imap.search(None, "ALL")
+        else:
+            logger.info(f"[{address}] 최초 동기화입니다. ALL로 UID 전체를 조회합니다.")
+            status, data = imap.search(None, "ALL")
+
         if status != "OK":
             logger.error(f"[{address}] IMAP search 실패. Status: {status}")
             uids_to_process = []
         else:
             all_uids = data[0].split()
-            if not account.last_synced:
-                uids_to_process = all_uids[-50:]  # 최초 동기화 시 최신 50개
+            uids_to_process = all_uids[-50:]
+            if not last_uid:
                 logger.info(
                     f"[{address}] 최초 동기화로, 전체 {len(all_uids)}개 중 최신 {len(uids_to_process)}개의 UID를 처리합니다."
                 )
             else:
-                uids_to_process = all_uids
-                logger.info(f"[{address}] 검색된 전체 UID 개수: {len(uids_to_process)}")
+                logger.info(f"[{address}] 검색된 UID 개수: {len(uids_to_process)} (기존 이후)")
 
         # 이미 DB에 있는 UID는 건너뛰기 (공통 로직)
         if uids_to_process:
@@ -203,7 +211,8 @@ def fetch_and_store_emails(address):
         for uid in uids_to_fetch:
             uid_str = uid.decode()
             try:
-                status, msg_data = imap.fetch(uid, "(RFC822)")
+                # status, msg_data = imap.fetch(uid, "(RFC822)")
+                status, msg_data = imap.uid("fetch", uid, "(RFC822)")
                 if status != "OK":
                     logger.warning(f"[{address}] UID {uid_str} fetch 실패. Status: {status}")
                     continue
