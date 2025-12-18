@@ -1,5 +1,4 @@
 import requests
-from functools import lru_cache
 from jose import jwt
 from jose.backends.rsa_backend import RSAKey
 from django.conf import settings
@@ -8,7 +7,6 @@ from rest_framework import authentication, exceptions
 from .models import User
 
 
-@lru_cache(maxsize=1)
 def _fetch_jwks():
     resp = requests.get(settings.CLERK_JWKS_URL, timeout=5)
     resp.raise_for_status()
@@ -21,7 +19,7 @@ def _get_public_key(token):
     for key in _fetch_jwks().get("keys", []):
         if key.get("kid") == kid:
             # jose가 JWK를 키 객체로 바꿔서 쓸 수 있게 해줌
-            return RSAKey(key, algorithm='RS256')
+            return RSAKey(key, algorithm="RS256")
     raise exceptions.AuthenticationFailed("Public key not found for token")
 
 
