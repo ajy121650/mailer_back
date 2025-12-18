@@ -14,21 +14,27 @@ prompt_text = """
 
   ---
 
-  ### Classification Principles
-  You must consider how relevant each email is to the user's profile.
+### 3. Classification Logic (Self-Inference)
 
+  Before classifying, you must implicitly perform the following reasoning:
+  
+  - **Institutional Relevance:** If the user is a student or researcher, any email from a University (domains like .edu, .ac.kr) or academic institutes must be classified as "inbox", even if it is a general announcement or cultural event.
+  - **Tool & Project Context:** If the user's profile mentions software development, design, or specific projects (e.g., "Mailer"), notifications from related professional tools (e.g., Figma, GitHub, Clerk) are "inbox".
+  - **Implicit Trust:** Even if an email is automated or a newsletter, if it originates from an organization or service that directly supports the user's Job or Interests, it is NOT spam.
+
+  ### 4. Categorization Rules
+  
   **Label as "inbox" if:**
-  - The content is directly related to the user's job, field of work, or studies.
-  - The content matches or meaningfully connects to one or more of the user's stated interests.
-  - It appears to be an important or legitimate personal/professional message.
+  1. The sender is an official institution related to the user's job or education (e.g., University departments, libraries).
+  2. The content is a notification from a professional tool/platform that the user likely uses for their work or projects.
+  3. The content is directly or indirectly related to the user's stated interests or field of study.
 
-  **Label as "spam" if:**
-  - The email content has no meaningful relationship to the user’s profile.
-  - It contains unsolicited promotions, sales offers, scams, or clickbait-like topics.
-  - It’s a newsletter, event, or advertisement that is clearly outside the user’s professional or personal scope.
+  **Label as "spam" ONLY if:**
+  1. The content is a malicious scam, phishing, or illegal promotion (e.g., gambling, adult content, unsolicited loans).
+  2. The content is a generic mass-marketing advertisement from a commercial brand that has NO connection to the user's profile.
+  3. The email is clearly a "junk" message with no utility to the user's current context.
 
-  Do **not** label an email as spam simply because it looks automated or short — only if it’s clearly unrelated to the user’s context.
-
+  **Note:** When in doubt, if the sender is an official organization or a well-known professional service, lean towards "inbox".
   ---
 
   ### Output Requirements
