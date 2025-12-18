@@ -91,7 +91,7 @@ class EmailMetadataListView(generics.ListAPIView):
     """메일 통합 조회를 위한 API View"""
 
     serializer_class = EmailMetadataListSerializer
-    permission_classes = [TestPermission]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         """
@@ -178,7 +178,7 @@ class EmailUpdateView(generics.RetrieveUpdateDestroyAPIView):
     """특정 이메일의 조회, 수정, 삭제를 위한 API View"""
 
     http_method_names = ["get", "patch", "delete"]
-    permission_classes = [TestPermission]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
         """요청 메서드에 따라 다른 시리얼라이저를 반환합니다."""
@@ -236,7 +236,7 @@ class EmailUpdateView(generics.RetrieveUpdateDestroyAPIView):
 # 메일 요약을 위한 view
 # ----------------------------------------------------------------
 class EmailSummarizeView(APIView):
-    permission_classes = [TestPermission]
+    permission_classes = [permissions.IsAuthenticated]
     resummarize = False  # Default value, will be overridden by as_view()
 
     @extend_schema(
