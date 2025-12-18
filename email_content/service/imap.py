@@ -149,18 +149,33 @@ def fetch_and_store_emails(address):
 
     try:
         # 3. UID 조회 최적화 (하이브리드 방식)
+        # --- 검색 조건 구성 ---
+        # Naver 등 일부 서버는 '(SENTSINCE "17-Dec-2025")' 형태보다
+        #   imap.search(None, "SENTSINCE", "17-Dec-2025") 형태를 더 잘 처리한다.
+        # 검색 실패/0건이면 SINCE로 폴백하거나 최신 N개 재조회.
+        search_mode = "SENTSINCE"
+        search_date = None
         if account.last_synced:
-            # --- 이후 동기화 ---
-            sync_start_date = account.last_synced
-            search_date = (sync_start_date - timedelta(days=1)).strftime("%d-%b-%Y")
-            search_criteria = f'(SENTSINCE "{search_date}")'
-            logger.info(f"[{address}] 후속 동기화를 시작합니다. 검색 조건: {search_criteria}")
+            sync_start_date = account.last_synced - timedelta(days=1)
+            search_date = sync_start_date.strftime("%d-%b-%Y")
+            logger.info(f"[{address}] 후속 동기화를 시작합니다. 검색 조건: {search_mode} {search_date}")
         else:
-            # --- 최초 동기화 ---
-            search_criteria = "ALL"
             logger.info(f"[{address}] 최초 동기화를 시작합니다. 모든 메일을 대상으로 합니다.")
 
-        status, data = imap.search(None, search_criteria)
+        # 3-1. 기본 검색
+        if search_date:
+            status, data = imap.search(None, search_mode, search_date)
+        else:
+            status, data = imap.search(None, "ALL")
+
+        # 3-2. 실패/0건 시 폴백 (네이버 호환성 확보)
+        if status != "OK" or (data and isinstance(data[0], bytes) and len(data[0].split()) == 0):
+            logger.warning(f"[{address}] 기본 검색 결과 없음(status={status}). SINCE로 재시도합니다.")
+            if search_date:
+                status, data = imap.search(None, "SINCE", search_date)
+            else:
+                status, data = imap.search(None, "ALL")
+
         if status != "OK":
             logger.error(f"[{address}] IMAP search 실패. Status: {status}")
             uids_to_process = []
