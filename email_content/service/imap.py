@@ -175,13 +175,12 @@ def fetch_and_store_emails(address):
             uids_to_process = []
         else:
             all_uids = data[0].split()
+            uids_to_process = all_uids[-50:]
             if not last_uid:
-                uids_to_process = all_uids[-50:]  # 최초 동기화 시 최신 50개만
                 logger.info(
                     f"[{address}] 최초 동기화로, 전체 {len(all_uids)}개 중 최신 {len(uids_to_process)}개의 UID를 처리합니다."
                 )
             else:
-                uids_to_process = all_uids
                 logger.info(f"[{address}] 검색된 UID 개수: {len(uids_to_process)} (기존 이후)")
 
         # 이미 DB에 있는 UID는 건너뛰기 (공통 로직)
@@ -212,7 +211,8 @@ def fetch_and_store_emails(address):
         for uid in uids_to_fetch:
             uid_str = uid.decode()
             try:
-                status, msg_data = imap.fetch(uid, "(RFC822)")
+                # status, msg_data = imap.fetch(uid, "(RFC822)")
+                status, msg_data = imap.uid("fetch", uid, "(RFC822)")
                 if status != "OK":
                     logger.warning(f"[{address}] UID {uid_str} fetch 실패. Status: {status}")
                     continue
