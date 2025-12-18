@@ -28,6 +28,9 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Clerk 사용 안함 환경변수 (테스트용)
 CLERK_TURN_OFF = os.environ.get("CLERK_TURN_OFF") == "True"
 
+# 첨부파일 저장기능 활성화 환경변수
+SAVE_ATTACHMENTS = os.environ.get("SAVE_ATTACHMENTS") == "True"
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
