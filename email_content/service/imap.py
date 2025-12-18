@@ -1,18 +1,14 @@
 import imaplib
 import email
 from email.header import decode_header
-import os
-import uuid
 import email.utils
 from datetime import timedelta
 import logging
 
-from django.conf import settings
 from django.db import transaction
 
 from email_content.models import EmailContent
 from email_account.models import EmailAccount
-from email_attachment.models import Attachment
 from email_metadata.models import EmailMetadata
 from email_content.utils import get_imap_config
 from utils.spam_filter import classify_emails_in_batch
@@ -26,29 +22,31 @@ logger = logging.getLogger(__name__)
 
 def save_attachment_locally(file_bytes, original_filename):
     """
+    [배포용] 주석 처리됨
     첨부파일을 로컬 파일 시스템에 저장하고, DB에 기록할 상대 경로를 반환합니다.
     """
-    # 파일 확장자 추출, 없으면 'bin' 사용
-    try:
-        ext = original_filename.split(".")[-1] if "." in original_filename else "bin"
-    except Exception:
-        ext = "bin"
+    # # 파일 확장자 추출, 없으면 'bin' 사용
+    # try:
+    #     ext = original_filename.split(".")[-1] if "." in original_filename else "bin"
+    # except Exception:
+    #     ext = "bin"
 
-    # 저장 경로 설정 (루트/EmailAttachments/)
-    storage_dir = os.path.join(settings.BASE_DIR, "EmailAttachments")
-    os.makedirs(storage_dir, exist_ok=True)
+    # # 저장 경로 설정 (루트/EmailAttachments/)
+    # storage_dir = os.path.join(settings.BASE_DIR, "EmailAttachments")
+    # os.makedirs(storage_dir, exist_ok=True)
 
-    # 고유한 파일명 생성 및 전체 경로 조합
-    file_name = f"{uuid.uuid4()}.{ext}"
-    relative_path = os.path.join("EmailAttachments", file_name)
-    full_path = os.path.join(settings.BASE_DIR, relative_path)
+    # # 고유한 파일명 생성 및 전체 경로 조합
+    # file_name = f"{uuid.uuid4()}.{ext}"
+    # relative_path = os.path.join("EmailAttachments", file_name)
+    # full_path = os.path.join(settings.BASE_DIR, relative_path)
 
-    # 파일 저장
-    with open(full_path, "wb") as f:
-        f.write(file_bytes)
+    # # 파일 저장
+    # with open(full_path, "wb") as f:
+    #     f.write(file_bytes)
 
-    # DB에 저장할 상대 경로 반환
-    return relative_path
+    # # DB에 저장할 상대 경로 반환
+    # return relative_path
+    return None  # 함수가 호출될 경우를 대비
 
 
 def decode_mime_header(header_string):
@@ -228,17 +226,19 @@ def fetch_and_store_emails(address):
 
                             if "attachment" in disp and part.get_filename():
                                 file_bytes = part.get_payload(decode=True)
-                                filename = decode_mime_header(part.get_filename())
+                                # filename = decode_mime_header(part.get_filename())
                                 if file_bytes:
-                                    local_path = save_attachment_locally(file_bytes, filename)
-                                    attachments_info.append(
-                                        {
-                                            "filename": filename,
-                                            "mime_type": ctype,
-                                            "size": len(file_bytes),
-                                            "path": local_path,
-                                        }
-                                    )
+                                    # [배포용] 첨부파일 저장 로직 비활성화
+                                    # local_path = save_attachment_locally(file_bytes, filename)
+                                    # attachments_info.append(
+                                    #     {
+                                    #         "filename": filename,
+                                    #         "mime_type": ctype,
+                                    #         "size": len(file_bytes),
+                                    #         "path": local_path,
+                                    #     }
+                                    # )
+                                    pass
                         except Exception as e:
                             logger.warning(f"[{address}] UID {uid_str}의 일부 파트 처리 중 오류: {e}", exc_info=True)
                             continue  # 개별 파트 오류는 무시
@@ -324,14 +324,15 @@ def fetch_and_store_emails(address):
                         received_at=data["parsed_date"],
                     )
 
-                    for att_info in data["attachments"]:
-                        Attachment.objects.create(
-                            email=email_obj,
-                            file_name=att_info["filename"],
-                            mime_type=att_info["mime_type"],
-                            file_size=att_info["size"],
-                            file_path=att_info["path"],
-                        )
+                    # [배포용] 첨부파일 DB 저장 로직 비활성화
+                    # for att_info in data["attachments"]:
+                    #     Attachment.objects.create(
+                    #         email=email_obj,
+                    #         file_name=att_info["filename"],
+                    #         mime_type=att_info["mime_type"],
+                    #         file_size=att_info["size"],
+                    #         file_path=att_info["path"],
+                    #     )
                     synced_count += 1
                     logger.info(f"[{address}] UID {uid_str} DB 저장 완료.")
             except Exception as e:
