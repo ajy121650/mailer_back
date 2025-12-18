@@ -39,7 +39,7 @@ prompt_text = """
 
   ### Output Requirements
   - Respond with a **single valid JSON object only**.
-  - Structure: {"<email_id>": "spam" | "inbox", ...}
+  - Structure: {{"<email_id>": "spam" | "inbox", ...}}
   - No extra text, comments, markdown, or explanations.
 
   Example:
