@@ -175,7 +175,7 @@ def fetch_and_store_emails(address):
             uids_to_process = []
         else:
             all_uids = data[0].split()
-            uids_to_process = all_uids[-50:]
+            uids_to_process = all_uids[-20:]
             if not last_uid:
                 logger.info(
                     f"[{address}] 최초 동기화로, 전체 {len(all_uids)}개 중 최신 {len(uids_to_process)}개의 UID를 처리합니다."
