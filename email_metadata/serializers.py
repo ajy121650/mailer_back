@@ -20,6 +20,7 @@ class EmailPreviewSerializer(serializers.ModelSerializer):
             "to_header",
             "date",
             "preview",  # 본문 대신 미리보기 필드 preview 사용.
+            "has_attachment",
         ]
 
     def get_subject(self, obj) -> str:
@@ -96,6 +97,7 @@ class EmailContentSerializer(serializers.ModelSerializer):
             "text_body",
             "html_body",
             "date",
+            "has_attachment",
             "attachments",
         ]
 
