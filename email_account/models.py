@@ -11,7 +11,7 @@ class EmailAccount(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="email_accounts")
     is_valid = models.BooleanField(default=True)
     domain = models.CharField(max_length=255)
-    address = models.EmailField(unique=True)
+    address = models.EmailField()
     encrypted_password = models.CharField(max_length=255)
 
     #### 스팸 필터링을 위한 사용자 선호도 필드 ####
@@ -23,6 +23,11 @@ class EmailAccount(models.Model):
 
     last_synced = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "address"], name="uniq_email_per_user"),
+        ]
 
     @property
     def email_password(self):
